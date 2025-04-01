@@ -41,9 +41,9 @@ The work collected here centers on a few themes:
 
 - 🚀 **[QUICKSTART.md](QUICKSTART.md)** — Step-by-step guide to generating and using runtime evidence
 - 📂 **[examples/](examples/)** — Real pipeline outputs and LLM responses you can inspect immediately
-- `essays/` — writing, arguments, and position notes
-- `demos/` — small demonstrations
-- `engineering/` — notes on enterprise-level implementation and production readiness
+- 📝 **[essays/](essays/)** — Writing, arguments, and position notes
+- 🎮 **[demos/](demos/)** — Small demonstrations
+- 🏗️ **[engineering/](engineering/)** — Notes on enterprise-level implementation and production readiness
 
 ## Examples: See the Output Without Running Anything
 
