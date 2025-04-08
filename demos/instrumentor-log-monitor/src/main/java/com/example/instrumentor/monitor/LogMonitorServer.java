@@ -21,9 +21,8 @@ public class LogMonitorServer implements LogLifecycleHook {
 
     private static final int DEFAULT_PORT = 19898;
     private static final String PROP_PORT = "instrumentor.monitor.port";
+    private static final String PROP_AUTO_FLUSH = "instrumentor.monitor.autoFlushOnShutdown";
     private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-
-    
 
     @Override
     public void onFirstLog() {
@@ -31,25 +30,67 @@ public class LogMonitorServer implements LogLifecycleHook {
         Thread serverThread = new Thread(() -> startHttpServer(port), "LogMonitor-HttpServer");
         serverThread.setDaemon(true);
         serverThread.start();
+
+        // 关键改动：注册 shutdown hook，JVM 退出前自动刷盘
+        boolean autoFlush = Boolean.parseBoolean(
+                System.getProperty(PROP_AUTO_FLUSH, "true"));
+        if (autoFlush) {
+            Runtime.getRuntime().addShutdownHook(
+                    new Thread(this::flushOnShutdown, "LogMonitor-ShutdownFlush"));
+        }
     }
 
-    
+    /**
+     * JVM 退出时自动执行的刷盘逻辑。
+     * Shutdown hook 运行在非 daemon 线程中，JVM 会等待它执行完毕后再真正退出。
+     */
+    private void flushOnShutdown() {
+        try {
+            String ts = LocalDateTime.now().format(TS_FMT);
+            String logFilePath = "instrumentor-log-" + ts + "-shutdown.txt";
+            String eventFilePath = "instrumentor-events-" + ts + "-shutdown.txt";
+
+            // 刷基础日志
+            LinkedHashMap<Long, List<Integer>> logSnapshot = InstrumentLog.getOrderedSnapshot();
+            if (!logSnapshot.isEmpty()) {
+                String logContent = formatLogSnapshot(logSnapshot);
+                Files.writeString(Path.of(logFilePath), logContent, StandardCharsets.UTF_8);
+                System.err.printf("[LogMonitor] Shutdown hook: basic log written to %s%n",
+                        Path.of(logFilePath).toAbsolutePath());
+            }
+
+            // 刷事件日志
+            List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
+            int totalEvents = countTotalEvents(buffers);
+            if (totalEvents > 0) {
+                Map<Integer, String> dict = loadDictionary();
+                String eventContent = formatEventSnapshot(buffers, dict);
+                Files.writeString(Path.of(eventFilePath), eventContent, StandardCharsets.UTF_8);
+                System.err.printf("[LogMonitor] Shutdown hook: event log written to %s%n",
+                        Path.of(eventFilePath).toAbsolutePath());
+            }
+
+            if (logSnapshot.isEmpty() && totalEvents == 0) {
+                System.err.println("[LogMonitor] Shutdown hook: no logs to flush.");
+            }
+        } catch (Exception e) {
+            System.err.println("[LogMonitor] Shutdown hook flush failed: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
 
     private void startHttpServer(int initialPort) {
         int port = initialPort;
-        int maxTries = 100; 
+        int maxTries = 100;
         HttpServer server = null;
 
-        
         for (int i = 0; i < maxTries; i++) {
             try {
                 server = HttpServer.create(new InetSocketAddress(port), 0);
-                break; 
+                break;
             } catch (BindException e) {
-                
                 port++;
             } catch (IOException e) {
-                
                 System.err.printf("[LogMonitor] Exception occurred while starting HTTP service: %s%n", e.getMessage());
                 e.printStackTrace();
                 return;
@@ -57,7 +98,8 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
 
         if (server == null) {
-            System.err.printf("[LogMonitor] Unable to start HTTP service, port range %d - %d all occupied.%n", initialPort, initialPort + maxTries - 1);
+            System.err.printf("[LogMonitor] Unable to start HTTP service, port range %d - %d all occupied.%n",
+                    initialPort, initialPort + maxTries - 1);
             return;
         }
 
@@ -74,24 +116,22 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
     }
 
-    
-
     private void handleClear(HttpExchange exchange) throws IOException {
         InstrumentLog.clear();
         sendTextResponse(exchange, 200, "[LogMonitor] Logs cleared.\n");
     }
 
-    
-
     private void handleFlush(HttpExchange exchange) throws IOException {
         Map<String, String> params = parseQuery(exchange.getRequestURI().getRawQuery());
         String customFile = params.get("file");
-        
+
         String logFilePath, eventFilePath;
         if (customFile != null && !customFile.isEmpty()) {
             logFilePath = customFile;
             int dotIndex = customFile.lastIndexOf('.');
-            eventFilePath = dotIndex > 0 ? customFile.substring(0, dotIndex) + "-events" + customFile.substring(dotIndex) : customFile + "-events";
+            eventFilePath = dotIndex > 0
+                    ? customFile.substring(0, dotIndex) + "-events" + customFile.substring(dotIndex)
+                    : customFile + "-events";
         } else {
             String ts = LocalDateTime.now().format(TS_FMT);
             logFilePath = "instrumentor-log-" + ts + ".txt";
@@ -116,8 +156,6 @@ public class LogMonitorServer implements LogLifecycleHook {
         sendTextResponse(exchange, 200, resp.toString());
     }
 
-    
-
     private void handleStatus(HttpExchange exchange) throws IOException {
         LinkedHashMap<Long, List<Integer>> logSnapshot = InstrumentLog.getOrderedSnapshot();
         List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
@@ -132,8 +170,6 @@ public class LogMonitorServer implements LogLifecycleHook {
         sb.append("  Total Event Log Entries: ").append(totalEvents).append("\n");
         sendTextResponse(exchange, 200, sb.toString());
     }
-
-    
 
     private Map<Integer, String> loadDictionary() {
         Map<Integer, String> dict = new HashMap<>();
@@ -151,12 +187,9 @@ public class LogMonitorServer implements LogLifecycleHook {
         return dict;
     }
 
-    
     private String formatLogSnapshot(LinkedHashMap<Long, List<Integer>> snapshot) {
         StringBuilder sb = new StringBuilder();
 
-        // 1. In-memory deduplication: group threads by their canonical key
-        //    (the sorted, distinct set of block IDs they visited)
         LinkedHashMap<String, List<Map.Entry<Long, List<Integer>>>> groups = new LinkedHashMap<>();
         for (Map.Entry<Long, List<Integer>> entry : snapshot.entrySet()) {
             String canonicalKey = entry.getValue().stream()
@@ -167,14 +200,13 @@ public class LogMonitorServer implements LogLifecycleHook {
             groups.computeIfAbsent(canonicalKey, k -> new ArrayList<>()).add(entry);
         }
 
-        // 2. Write header with deduplication stats
         int originalCount = snapshot.size();
         int dedupedCount = groups.size();
-        sb.append("# InstrumentLog (Deduplicated) @ ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+        sb.append("# InstrumentLog (Deduplicated) @ ")
+          .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
         sb.append("# Original thread count: ").append(originalCount)
           .append(", Deduplicated group count: ").append(dedupedCount).append("\n\n");
 
-        // 3. Output one representative thread per group
         int order = 1;
         for (Map.Entry<String, List<Map.Entry<Long, List<Integer>>>> groupEntry : groups.entrySet()) {
             List<Map.Entry<Long, List<Integer>>> group = groupEntry.getValue();
@@ -204,7 +236,6 @@ public class LogMonitorServer implements LogLifecycleHook {
         return sb.toString();
     }
 
-    
     private static class EventRecord implements Comparable<EventRecord> {
         long threadId;
         long nanoTime;
@@ -228,27 +259,24 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
     }
 
-    
     private String formatEventSnapshot(List<InstrumentLog.ThreadEventBuffer> buffers, Map<Integer, String> dict) {
-        
         List<EventRecord> allEvents = new ArrayList<>();
         long minTime = Long.MAX_VALUE;
-        
-        
+
         Map<Integer, Set<Long>> itemThreadMap = new HashMap<>();
 
         for (InstrumentLog.ThreadEventBuffer buf : buffers) {
             for (int i = 0; i < buf.count; i++) {
                 long time = buf.nanoTimes[i];
                 if (time < minTime) minTime = time;
-                
+
                 int eventId = buf.eventIds[i];
                 int objId = buf.shareObjectIds[i];
                 int itemId = buf.itemIds[i];
                 String action = dict.getOrDefault(eventId, "EVT_" + eventId);
-                
+
                 allEvents.add(new EventRecord(buf.threadId, time, eventId, objId, itemId, action));
-                
+
                 if (itemId != 0) {
                     itemThreadMap.computeIfAbsent(itemId, k -> new HashSet<>()).add(buf.threadId);
                 }
@@ -256,7 +284,6 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
         if (minTime == Long.MAX_VALUE) minTime = 0;
 
-        
         Map<Integer, String> objMap = new LinkedHashMap<>();
         Map<Integer, String> itemMap = new LinkedHashMap<>();
         int objCounter = 1, itemCounter = 1;
@@ -270,46 +297,41 @@ public class LogMonitorServer implements LogLifecycleHook {
             }
         }
 
-        
         Collections.sort(allEvents);
 
-        
         List<EventRecord> compressedEvents = new ArrayList<>();
-        Map<String, EventRecord> lastActionMap = new HashMap<>(); 
+        Map<String, EventRecord> lastActionMap = new HashMap<>();
 
         for (EventRecord current : allEvents) {
-            
             if (current.itemId != 0) {
                 Set<Long> accessingThreads = itemThreadMap.get(current.itemId);
                 if (accessingThreads != null && accessingThreads.size() <= 1) {
-                    continue; 
+                    continue;
                 }
             }
 
-            
             String stateKey = current.threadId + "_" + current.itemId + "_" + current.actionName;
             EventRecord last = lastActionMap.get(stateKey);
-            
-            
+
             if (last != null && last.actionName.equals(current.actionName)) {
                 continue;
             }
-            
+
             lastActionMap.put(stateKey, current);
             compressedEvents.add(current);
         }
 
-        
         StringBuilder sb = new StringBuilder();
-        sb.append("# AI-Optimized Event Log Dump @ ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+        sb.append("# AI-Optimized Event Log Dump @ ")
+          .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
         sb.append("# BaseTime: ").append(minTime).append("\n");
         sb.append("# Format: DeltaTime, Thread, Action, Object, Item\n");
         sb.append("# Field Descriptions:\n");
         sb.append("#   - DeltaTime: Time elapsed (in nanoseconds) since the first recorded event.\n");
         sb.append("#   - Thread: The identifier of the thread performing the action.\n");
         sb.append("#   - Action: The operation performed (e.g., READ, WRITE, SYNC_ENTER).\n");
-        sb.append("#   - Object: The shared resource the thread is operating on (e.g., lock, queue, shared instance).\n");
-        sb.append("#   - Item: The specific data object being passed, read, or written during the operation.\n");
+        sb.append("#   - Object: The shared resource the thread is operating on.\n");
+        sb.append("#   - Item: The specific data object being passed, read, or written.\n");
         sb.append("# Note: Thread-local items are filtered. Redundant consecutive actions are merged.\n\n");
 
         for (EventRecord record : compressedEvents) {
@@ -344,7 +366,8 @@ public class LogMonitorServer implements LogLifecycleHook {
         if (rawQuery == null || rawQuery.isEmpty()) return params;
         for (String pair : rawQuery.split("&")) {
             String[] kv = pair.split("=", 2);
-            params.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8), kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "");
+            params.put(URLDecoder.decode(kv[0], StandardCharsets.UTF_8),
+                    kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "");
         }
         return params;
     }
