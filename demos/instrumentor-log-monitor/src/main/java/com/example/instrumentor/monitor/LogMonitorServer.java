@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 public class LogMonitorServer implements LogLifecycleHook {
@@ -24,6 +25,9 @@ public class LogMonitorServer implements LogLifecycleHook {
     private static final String PROP_AUTO_FLUSH = "instrumentor.monitor.autoFlushOnShutdown";
     private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
 
+    /** 防止多次刷盘 */
+    private static final AtomicBoolean FLUSHED = new AtomicBoolean(false);
+
     @Override
     public void onFirstLog() {
         int port = Integer.getInteger(PROP_PORT, DEFAULT_PORT);
@@ -31,53 +35,69 @@ public class LogMonitorServer implements LogLifecycleHook {
         serverThread.setDaemon(true);
         serverThread.start();
 
-        // 关键改动：注册 shutdown hook，JVM 退出前自动刷盘
         boolean autoFlush = Boolean.parseBoolean(
                 System.getProperty(PROP_AUTO_FLUSH, "true"));
         if (autoFlush) {
             Runtime.getRuntime().addShutdownHook(
-                    new Thread(this::flushOnShutdown, "LogMonitor-ShutdownFlush"));
+                    new Thread(() -> {
+                        log("Shutdown hook triggered.");
+                        flushNow("shutdown");
+                    }, "LogMonitor-ShutdownFlush"));
+            log("Auto-flush enabled: shutdown hook registered.");
         }
     }
 
+    // ======================== Flush ========================
+
     /**
-     * JVM 退出时自动执行的刷盘逻辑。
-     * Shutdown hook 运行在非 daemon 线程中，JVM 会等待它执行完毕后再真正退出。
+     * 公开的静态刷盘方法。通过 AtomicBoolean 保证只执行一次。
      */
-    private void flushOnShutdown() {
+    public static void flushNow(String source) {
+        if (!FLUSHED.compareAndSet(false, true)) {
+            log("flushNow(%s) skipped — already flushed.", source);
+            return;
+        }
+
         try {
             String ts = LocalDateTime.now().format(TS_FMT);
-            String logFilePath = "instrumentor-log-" + ts + "-shutdown.txt";
-            String eventFilePath = "instrumentor-events-" + ts + "-shutdown.txt";
+            String logFilePath = "instrumentor-log-" + ts + "-" + source + ".txt";
+            String eventFilePath = "instrumentor-events-" + ts + "-" + source + ".txt";
 
-            // 刷基础日志
             LinkedHashMap<Long, List<Integer>> logSnapshot = InstrumentLog.getOrderedSnapshot();
+            List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
+            int totalEvents = countTotalEventsStatic(buffers);
+
             if (!logSnapshot.isEmpty()) {
-                String logContent = formatLogSnapshot(logSnapshot);
+                String logContent = formatLogSnapshotStatic(logSnapshot);
                 Files.writeString(Path.of(logFilePath), logContent, StandardCharsets.UTF_8);
-                System.err.printf("[LogMonitor] Shutdown hook: basic log written to %s%n",
-                        Path.of(logFilePath).toAbsolutePath());
+                log("flushNow(%s): basic log written to %s", source, Path.of(logFilePath).toAbsolutePath());
             }
 
-            // 刷事件日志
-            List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
-            int totalEvents = countTotalEvents(buffers);
             if (totalEvents > 0) {
-                Map<Integer, String> dict = loadDictionary();
-                String eventContent = formatEventSnapshot(buffers, dict);
+                Map<Integer, String> dict = loadDictionaryStatic();
+                String eventContent = formatEventSnapshotStatic(buffers, dict);
                 Files.writeString(Path.of(eventFilePath), eventContent, StandardCharsets.UTF_8);
-                System.err.printf("[LogMonitor] Shutdown hook: event log written to %s%n",
-                        Path.of(eventFilePath).toAbsolutePath());
+                log("flushNow(%s): event log written to %s", source, Path.of(eventFilePath).toAbsolutePath());
             }
 
             if (logSnapshot.isEmpty() && totalEvents == 0) {
-                System.err.println("[LogMonitor] Shutdown hook: no logs to flush.");
+                log("flushNow(%s): no logs to flush.", source);
             }
         } catch (Exception e) {
-            System.err.println("[LogMonitor] Shutdown hook flush failed: " + e.getMessage());
-            e.printStackTrace();
+            log("flushNow(%s) failed: %s", source, e.getMessage());
+            e.printStackTrace(System.err);
         }
     }
+
+    public static void flushNow() {
+        flushNow("manual");
+    }
+
+    public static void resetFlushState() {
+        FLUSHED.set(false);
+    }
+
+    // ======================== HTTP Server ========================
 
     private void startHttpServer(int initialPort) {
         int port = initialPort;
@@ -91,14 +111,13 @@ public class LogMonitorServer implements LogLifecycleHook {
             } catch (BindException e) {
                 port++;
             } catch (IOException e) {
-                System.err.printf("[LogMonitor] Exception occurred while starting HTTP service: %s%n", e.getMessage());
-                e.printStackTrace();
+                log("Exception occurred while starting HTTP service: %s", e.getMessage());
                 return;
             }
         }
 
         if (server == null) {
-            System.err.printf("[LogMonitor] Unable to start HTTP service, port range %d - %d all occupied.%n",
+            log("Unable to start HTTP service, port range %d - %d all occupied.",
                     initialPort, initialPort + maxTries - 1);
             return;
         }
@@ -109,10 +128,9 @@ public class LogMonitorServer implements LogLifecycleHook {
             server.createContext("/status", this::handleStatus);
             server.setExecutor(null);
             server.start();
-            System.out.printf("[LogMonitor] HTTP monitoring service started: http://localhost:%d%n", port);
+            log("Instrumentor monitoring service started: http://localhost:%d", port);
         } catch (Exception e) {
-            System.err.printf("[LogMonitor] Unable to configure or start HTTP service: %s%n", e.getMessage());
-            e.printStackTrace();
+            log("Unable to configure or start HTTP service: %s", e.getMessage());
         }
     }
 
@@ -139,13 +157,13 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
 
         LinkedHashMap<Long, List<Integer>> logSnapshot = InstrumentLog.getOrderedSnapshot();
-        String logContent = formatLogSnapshot(logSnapshot);
+        String logContent = formatLogSnapshotStatic(logSnapshot);
         Path logPath = Path.of(logFilePath);
         Files.writeString(logPath, logContent, StandardCharsets.UTF_8);
 
-        Map<Integer, String> dict = loadDictionary();
+        Map<Integer, String> dict = loadDictionaryStatic();
         List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
-        String eventContent = formatEventSnapshot(buffers, dict);
+        String eventContent = formatEventSnapshotStatic(buffers, dict);
         Path eventPath = Path.of(eventFilePath);
         Files.writeString(eventPath, eventContent, StandardCharsets.UTF_8);
 
@@ -159,8 +177,8 @@ public class LogMonitorServer implements LogLifecycleHook {
     private void handleStatus(HttpExchange exchange) throws IOException {
         LinkedHashMap<Long, List<Integer>> logSnapshot = InstrumentLog.getOrderedSnapshot();
         List<InstrumentLog.ThreadEventBuffer> buffers = InstrumentLog.getAllEventBuffers();
-        int totalLogs = countTotalLogs(logSnapshot);
-        int totalEvents = countTotalEvents(buffers);
+        int totalLogs = countTotalLogsStatic(logSnapshot);
+        int totalEvents = countTotalEventsStatic(buffers);
         List<Long> keyOrder = InstrumentLog.getThreadOrder();
 
         StringBuilder sb = new StringBuilder();
@@ -171,7 +189,13 @@ public class LogMonitorServer implements LogLifecycleHook {
         sendTextResponse(exchange, 200, sb.toString());
     }
 
-    private Map<Integer, String> loadDictionary() {
+    // ======================== Utility ========================
+
+    private static void log(String fmt, Object... args) {
+        System.err.printf("[LogMonitor] " + fmt + "%n", args);
+    }
+
+    private static Map<Integer, String> loadDictionaryStatic() {
         Map<Integer, String> dict = new HashMap<>();
         try {
             Path dictPath = Path.of("event_dictionary.txt");
@@ -182,12 +206,12 @@ public class LogMonitorServer implements LogLifecycleHook {
                 }
             }
         } catch (Exception e) {
-            System.err.println("[LogMonitor] Failed to load dictionary: " + e.getMessage());
+            log("Failed to load dictionary: %s", e.getMessage());
         }
         return dict;
     }
 
-    private String formatLogSnapshot(LinkedHashMap<Long, List<Integer>> snapshot) {
+    private static String formatLogSnapshotStatic(LinkedHashMap<Long, List<Integer>> snapshot) {
         StringBuilder sb = new StringBuilder();
 
         LinkedHashMap<String, List<Map.Entry<Long, List<Integer>>>> groups = new LinkedHashMap<>();
@@ -203,9 +227,9 @@ public class LogMonitorServer implements LogLifecycleHook {
         int originalCount = snapshot.size();
         int dedupedCount = groups.size();
         sb.append("# InstrumentLog (Deduplicated) @ ")
-          .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+                .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
         sb.append("# Original thread count: ").append(originalCount)
-          .append(", Deduplicated group count: ").append(dedupedCount).append("\n\n");
+                .append(", Deduplicated group count: ").append(dedupedCount).append("\n\n");
 
         int order = 1;
         for (Map.Entry<String, List<Map.Entry<Long, List<Integer>>>> groupEntry : groups.entrySet()) {
@@ -259,7 +283,7 @@ public class LogMonitorServer implements LogLifecycleHook {
         }
     }
 
-    private String formatEventSnapshot(List<InstrumentLog.ThreadEventBuffer> buffers, Map<Integer, String> dict) {
+    private static String formatEventSnapshotStatic(List<InstrumentLog.ThreadEventBuffer> buffers, Map<Integer, String> dict) {
         List<EventRecord> allEvents = new ArrayList<>();
         long minTime = Long.MAX_VALUE;
 
@@ -323,7 +347,7 @@ public class LogMonitorServer implements LogLifecycleHook {
 
         StringBuilder sb = new StringBuilder();
         sb.append("# AI-Optimized Event Log Dump @ ")
-          .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+                .append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
         sb.append("# BaseTime: ").append(minTime).append("\n");
         sb.append("# Format: DeltaTime, Thread, Action, Object, Item\n");
         sb.append("# Field Descriptions:\n");
@@ -340,22 +364,22 @@ public class LogMonitorServer implements LogLifecycleHook {
             String itemAlias = record.itemId == 0 ? "-" : itemMap.get(record.itemId);
 
             sb.append(deltaTime).append(", ")
-              .append("T").append(record.threadId).append(", ")
-              .append(record.actionName).append(", ")
-              .append(objAlias).append(", ")
-              .append(itemAlias).append("\n");
+                    .append("T").append(record.threadId).append(", ")
+                    .append(record.actionName).append(", ")
+                    .append(objAlias).append(", ")
+                    .append(itemAlias).append("\n");
         }
 
         return sb.toString();
     }
 
-    private int countTotalLogs(LinkedHashMap<Long, List<Integer>> snapshot) {
+    private static int countTotalLogsStatic(LinkedHashMap<Long, List<Integer>> snapshot) {
         int total = 0;
         for (List<Integer> list : snapshot.values()) total += list.size();
         return total;
     }
 
-    private int countTotalEvents(List<InstrumentLog.ThreadEventBuffer> buffers) {
+    private static int countTotalEventsStatic(List<InstrumentLog.ThreadEventBuffer> buffers) {
         int total = 0;
         for (InstrumentLog.ThreadEventBuffer buf : buffers) total += buf.count;
         return total;
