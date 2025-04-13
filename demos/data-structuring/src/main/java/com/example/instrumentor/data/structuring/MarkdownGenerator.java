@@ -10,29 +10,24 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-
 public class MarkdownGenerator {
 
     public static void generate(String jsonContent, String outputPath) throws IOException {
         JsonObject root = JsonParser.parseString(jsonContent).getAsJsonObject();
         StringBuilder md = new StringBuilder();
 
-        
         if (root.has("threads")) {
             md.append("# Thread Traces\n\n");
             md.append("> **Data Schema & Legend:**\n");
             md.append("> This section represents the execution call tree for each thread.\n");
-            md.append("> - **Trace**: The linear sequence of executed basic block IDs.\n");
             md.append("> - **Call Tree**: Hierarchical execution flow. Each node contains the source file and pruned source code.\n\n");
 
             for (JsonElement tElem : root.getAsJsonArray("threads")) {
                 JsonObject thread = tElem.getAsJsonObject();
                 md.append("## ").append(thread.get("name").getAsString())
                   .append(" (Order: ").append(thread.get("order").getAsInt()).append(")\n");
-                
-                if (thread.has("block_trace")) {
-                    md.append("**Trace:** ").append(thread.get("block_trace").toString()).append("\n\n");
-                }
+
+                // block_trace / Trace output has been removed as requested.
 
                 if (thread.has("call_tree") && !thread.get("call_tree").isJsonNull()) {
                     JsonElement callTreeElem = thread.get("call_tree");
@@ -48,7 +43,6 @@ public class MarkdownGenerator {
             }
         }
 
-        
         if (root.has("sync_relations")) {
             md.append("# Happens-Before\n");
             md.append("> **Format:** `- [Sync_Object] Releasing_Thread (Time) -> Acquiring_Thread (Time)`\n");
@@ -68,7 +62,6 @@ public class MarkdownGenerator {
             md.append("\n");
         }
 
-        
         if (root.has("data_races")) {
             md.append("# Data Races\n");
             
@@ -95,7 +88,6 @@ public class MarkdownGenerator {
             md.append("\n");
         }
 
-        
         if (root.has("possible_taint_flows")) {
             JsonObject taintObj = root.getAsJsonObject("possible_taint_flows");
             if (taintObj.has("flows")) {
@@ -132,19 +124,17 @@ public class MarkdownGenerator {
         Files.writeString(Paths.get(outputPath), md.toString(), StandardCharsets.UTF_8);
     }
 
-    
     private static void processCallNode(JsonObject node, StringBuilder md, int level) {
         String indent = "    ".repeat(level);
         String contentIndent = indent + "    ";
 
-        // 直接以 File 开头，不再输出 method 签名标题行
         if (node.has("file")) {
             md.append(indent).append("- *File:* `").append(node.get("file").getAsString()).append("`\n");
         } else {
             md.append(indent).append("- *(no file)*\n");
         }
 
-        // executed_blocks 已移除，不再输出 *Blocks:* 行
+        // executed_blocks is completely ignored here, as requested.
 
         if (node.has("source")) {
             String source = node.get("source").getAsString();

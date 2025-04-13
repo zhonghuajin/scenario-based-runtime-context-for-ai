@@ -1,0 +1,301 @@
+{
+  "sync_relations": [],
+  "data_races": [
+    {
+      "variable": "StandardOutcomesResolver.outcomes",
+      "writer": {
+        "thread": "T33",
+        "time": "939347600"
+      },
+      "reader": {
+        "thread": "T1",
+        "time": "939753900"
+      },
+      "description": "Lack of synchronization between T33 (Write) and T1 (Write)"
+    },
+    {
+      "variable": "StandardOutcomesResolver.outcomes",
+      "writer": {
+        "thread": "T1",
+        "time": "939753900"
+      },
+      "reader": {
+        "thread": "T33",
+        "time": "939801200"
+      },
+      "description": "Lack of synchronization between T1 (Write) and T33 (Write)"
+    }
+  ],
+  "possible_taint_flows": {
+    "description": "These are only potential propagation paths based on happens-before relationships and read/write order analysis. Treating inter-thread communication points as sources and sinks, they can be used for further single-thread or cross-thread taint propagation analysis.",
+    "flows": [
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "267637200",
+        "target_variable": "SoftReferenceConfigurationPropertyCache.lastAccessed",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to SoftReferenceConfigurationPropertyCache.lastAccessed, potentially tainted by previous reads: [ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "276773100",
+        "target_variable": "SoftReferenceConfigurationPropertyCache.timeToLive",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ApplicationConversionService.sharedInstance",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to SoftReferenceConfigurationPropertyCache.timeToLive, potentially tainted by previous reads: [ConfigurationPropertyName.systemEnvironmentLegacyName, ApplicationConversionService.sharedInstance, SoftReferenceConfigurationPropertyCache.lastAccessed, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "315639800",
+        "target_variable": "ContributorIterator.phase",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ApplicationConversionService.sharedInstance",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "Cache.data",
+          "AggregateSupplier.supplied",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to ContributorIterator.phase, potentially tainted by previous reads: [ConfigurationPropertyName.systemEnvironmentLegacyName, ApplicationConversionService.sharedInstance, SoftReferenceConfigurationPropertyCache.lastAccessed, Cache.data, AggregateSupplier.supplied, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "315646700",
+        "target_variable": "ContributorIterator.next",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ApplicationConversionService.sharedInstance",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "Cache.data",
+          "AggregateSupplier.supplied",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to ContributorIterator.next, potentially tainted by previous reads: [ConfigurationPropertyName.systemEnvironmentLegacyName, ApplicationConversionService.sharedInstance, SoftReferenceConfigurationPropertyCache.lastAccessed, Cache.data, AggregateSupplier.supplied, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "372412400",
+        "target_variable": "Context.configurationProperty",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ApplicationConversionService.sharedInstance",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "Cache.data",
+          "AggregateSupplier.supplied",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to Context.configurationProperty, potentially tainted by previous reads: [ConfigurationPropertyName.systemEnvironmentLegacyName, ApplicationConversionService.sharedInstance, SoftReferenceConfigurationPropertyCache.lastAccessed, Cache.data, AggregateSupplier.supplied, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "436037100",
+        "target_variable": "LoggingApplicationListener.logFile",
+        "written_item": "-",
+        "possible_source_variables": [
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ApplicationConversionService.sharedInstance",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "Cache.data",
+          "AggregateSupplier.supplied",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to LoggingApplicationListener.logFile, potentially tainted by previous reads: [ConfigurationPropertyName.systemEnvironmentLegacyName, ApplicationConversionService.sharedInstance, SoftReferenceConfigurationPropertyCache.lastAccessed, Cache.data, AggregateSupplier.supplied, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "939753900",
+        "target_variable": "StandardOutcomesResolver.outcomes",
+        "written_item": "-",
+        "possible_source_variables": [
+          "SpringApplication.banner",
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "AutoConfigurationImportSelector.configurationClassFilter",
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "AggregateSupplier.supplied",
+          "AutoConfigurationGroup.autoConfigurationReplacements",
+          "LoggingApplicationListener.logFile",
+          "TypeExcludeFilter.delegates",
+          "AutoConfigurationImportSelector.autoConfigurationReplacements",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to StandardOutcomesResolver.outcomes, potentially tainted by previous reads: [SpringApplication.banner, ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, AutoConfigurationImportSelector.configurationClassFilter, ConfigurationPropertyName.systemEnvironmentLegacyName, SoftReferenceConfigurationPropertyCache.lastAccessed, AggregateSupplier.supplied, AutoConfigurationGroup.autoConfigurationReplacements, LoggingApplicationListener.logFile, TypeExcludeFilter.delegates, AutoConfigurationImportSelector.autoConfigurationReplacements, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "987861000",
+        "target_variable": "ConfigurationClassFilter.candidates",
+        "written_item": "-",
+        "possible_source_variables": [
+          "SpringApplication.banner",
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "AutoConfigurationImportSelector.configurationClassFilter",
+          "FilteringSpringBootCondition.outcomes",
+          "ThreadedOutcomesResolver.failure",
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "AggregateSupplier.supplied",
+          "AutoConfigurationGroup.autoConfigurationReplacements",
+          "LoggingApplicationListener.logFile",
+          "TypeExcludeFilter.delegates",
+          "AutoConfigurationImportSelector.autoConfigurationReplacements",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to ConfigurationClassFilter.candidates, potentially tainted by previous reads: [SpringApplication.banner, ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, AutoConfigurationImportSelector.configurationClassFilter, FilteringSpringBootCondition.outcomes, ThreadedOutcomesResolver.failure, ConfigurationPropertyName.systemEnvironmentLegacyName, SoftReferenceConfigurationPropertyCache.lastAccessed, AggregateSupplier.supplied, AutoConfigurationGroup.autoConfigurationReplacements, LoggingApplicationListener.logFile, TypeExcludeFilter.delegates, AutoConfigurationImportSelector.autoConfigurationReplacements, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "988061700",
+        "target_variable": "OnWebApplicationCondition.outcomes",
+        "written_item": "-",
+        "possible_source_variables": [
+          "SpringApplication.banner",
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "AutoConfigurationImportSelector.configurationClassFilter",
+          "FilteringSpringBootCondition.outcomes",
+          "ThreadedOutcomesResolver.failure",
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "AggregateSupplier.supplied",
+          "AutoConfigurationGroup.autoConfigurationReplacements",
+          "LoggingApplicationListener.logFile",
+          "TypeExcludeFilter.delegates",
+          "AutoConfigurationImportSelector.autoConfigurationReplacements",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to OnWebApplicationCondition.outcomes, potentially tainted by previous reads: [SpringApplication.banner, ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, AutoConfigurationImportSelector.configurationClassFilter, FilteringSpringBootCondition.outcomes, ThreadedOutcomesResolver.failure, ConfigurationPropertyName.systemEnvironmentLegacyName, SoftReferenceConfigurationPropertyCache.lastAccessed, AggregateSupplier.supplied, AutoConfigurationGroup.autoConfigurationReplacements, LoggingApplicationListener.logFile, TypeExcludeFilter.delegates, AutoConfigurationImportSelector.autoConfigurationReplacements, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "992412400",
+        "target_variable": "OnBeanCondition.outcomes",
+        "written_item": "-",
+        "possible_source_variables": [
+          "SpringApplication.banner",
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "AutoConfigurationImportSelector.configurationClassFilter",
+          "FilteringSpringBootCondition.outcomes",
+          "ThreadedOutcomesResolver.failure",
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "OnWebApplicationCondition.autoConfigurationClasses",
+          "AggregateSupplier.supplied",
+          "AutoConfigurationGroup.autoConfigurationReplacements",
+          "LoggingApplicationListener.logFile",
+          "TypeExcludeFilter.delegates",
+          "AutoConfigurationImportSelector.autoConfigurationReplacements",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to OnBeanCondition.outcomes, potentially tainted by previous reads: [SpringApplication.banner, ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, AutoConfigurationImportSelector.configurationClassFilter, FilteringSpringBootCondition.outcomes, ThreadedOutcomesResolver.failure, ConfigurationPropertyName.systemEnvironmentLegacyName, SoftReferenceConfigurationPropertyCache.lastAccessed, OnWebApplicationCondition.autoConfigurationClasses, AggregateSupplier.supplied, AutoConfigurationGroup.autoConfigurationReplacements, LoggingApplicationListener.logFile, TypeExcludeFilter.delegates, AutoConfigurationImportSelector.autoConfigurationReplacements, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      },
+      {
+        "type": "intra_thread",
+        "thread": "T1",
+        "time": "2017909400",
+        "target_variable": "BeanProperties.declaredMethods",
+        "written_item": "-",
+        "possible_source_variables": [
+          "SpringApplication.banner",
+          "ApplicationConversionService.sharedInstance",
+          "Cache.data",
+          "DefaultPropertyMapper.lastMappedPropertyName",
+          "SpringIterableConfigurationPropertySource.configurationPropertyNames",
+          "ConfigurationPropertyName.hasDashedElement",
+          "DefaultPropertyMapper.lastMappedConfigurationPropertyName",
+          "AutoConfigurationImportSelector.configurationClassFilter",
+          "FilteringSpringBootCondition.outcomes",
+          "ThreadedOutcomesResolver.failure",
+          "OnBeanCondition.autoConfigurationClasses",
+          "ConfigurationPropertyName.systemEnvironmentLegacyName",
+          "ConfigurationPropertiesBinder.bindHandlerAdvisors",
+          "SoftReferenceConfigurationPropertyCache.lastAccessed",
+          "OnWebApplicationCondition.autoConfigurationClasses",
+          "AggregateSupplier.supplied",
+          "AutoConfigurationGroup.autoConfigurationReplacements",
+          "LoggingApplicationListener.logFile",
+          "TypeExcludeFilter.delegates",
+          "AutoConfigurationImportSelector.autoConfigurationReplacements",
+          "ConfigurationPropertyName.string",
+          "SoftReferenceConfigurationPropertyCache.timeToLive"
+        ],
+        "description": "Thread T1 wrote to BeanProperties.declaredMethods, potentially tainted by previous reads: [SpringApplication.banner, ApplicationConversionService.sharedInstance, Cache.data, DefaultPropertyMapper.lastMappedPropertyName, SpringIterableConfigurationPropertySource.configurationPropertyNames, ConfigurationPropertyName.hasDashedElement, DefaultPropertyMapper.lastMappedConfigurationPropertyName, AutoConfigurationImportSelector.configurationClassFilter, FilteringSpringBootCondition.outcomes, ThreadedOutcomesResolver.failure, OnBeanCondition.autoConfigurationClasses, ConfigurationPropertyName.systemEnvironmentLegacyName, ConfigurationPropertiesBinder.bindHandlerAdvisors, SoftReferenceConfigurationPropertyCache.lastAccessed, OnWebApplicationCondition.autoConfigurationClasses, AggregateSupplier.supplied, AutoConfigurationGroup.autoConfigurationReplacements, LoggingApplicationListener.logFile, TypeExcludeFilter.delegates, AutoConfigurationImportSelector.autoConfigurationReplacements, ConfigurationPropertyName.string, SoftReferenceConfigurationPropertyCache.timeToLive]"
+      }
+    ]
+  }
+}

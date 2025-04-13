@@ -3,7 +3,6 @@
 **Essays, and demos on using runtime evidence to build cleaner code context for AI.**
 
 👉 **[Read the Quick Start Guide](QUICKSTART.md)** to see how it works in practice.
-👉 **[Browse the Examples](examples/)** to see real pipeline outputs and AI responses without running anything.
 👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
 
 ---
@@ -62,50 +61,14 @@ The work collected here centers on a few themes:
 ## Contents
 
 - 🚀 **[QUICKSTART.md](QUICKSTART.md)** — Step-by-step guide to generating and using runtime evidence
-- 📂 **[examples/](examples/)** — Pipeline outputs from the PoC demo code — shows *what the pipeline produces*
 - 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes
 - 🎮 **[demos/](demos/)** — Small demonstrations
 - 🏗️ **[engineering/](engineering/)** — Notes on enterprise-level implementation and production readiness
 
-## Examples vs. Evidence
-
-This repository separates two kinds of artifacts, and the distinction matters:
-
-**[`examples/`](examples/)** contains pipeline outputs generated from the project's own PoC source code ([`demos/instrumentor-test`](demos/instrumentor-test)). These are controlled, self-contained demonstrations designed to show what the pipeline produces — the data formats, the denoised context structure, and how LLMs consume it. They answer the question: *"What does this pipeline's output look like?"*
-
-**[`evidence/`](evidence/)** contains case studies from **real open-source projects** — real bugs, real runtime artifacts, and real diagnoses. These are not controlled demos; they are instances where runtime evidence was applied to actual issues in projects like Spring Boot, and the results were independently confirmed by the project maintainers. They answer a different question: *"Does this approach actually work on real-world problems?"*
-
-In short: `examples/` is the proof of concept; `evidence/` is the proof of value.
-
-## Examples: See the Output Without Running Anything
-
-The [`examples/`](examples/) directory contains real, unedited artifacts produced by this pipeline against the PoC demo code in [`demos/instrumentor-test`](demos/instrumentor-test), so you can evaluate the pipeline's output format without setting up any environment.
-
-### Denoised Runtime Data
-
-The raw output of the pipeline — noise-free, scenario-specific runtime evidence in two formats:
-
-| Directory | Purpose |
-|---|---|
-| [`examples/denoised_data/for_ai/`](examples/denoised_data/for_ai/) | Structured Markdown files optimized for LLM consumption (`calltree`, `happensbefore`, `combined`) |
-| [`examples/denoised_data/for_human_beings/`](examples/denoised_data/for_human_beings/) | JSON format for human inspection and tooling integration |
-
-### Prompt Templates & LLM Responses
-
-Three concrete use cases, each with the exact prompt sent to the LLM and the unedited response received:
-
-| Use Case | Prompt | LLM Response |
-|---|---|---|
-| **Secondary Development** | [`AI_Dev_Prompt.md`](examples/prompt_and_response/prompt_template/AI_Dev_Prompt.md) | [`AI_Dev_LLM_Response.md`](examples/prompt_and_response/llm_response/AI_Dev_LLM_Response.md) |
-| **Bug Localization** | [`AI_Bug_Localization_Prompt.md`](examples/prompt_and_response/prompt_template/AI_Bug_Localization_Prompt.md) | [`AI_Bug_Localization_LLM_Response.md`](examples/prompt_and_response/llm_response/AI_Bug_Localization_LLM_Response.md) |
-| **Code Audit** | [`AI_Code_Audit_Prompt.md`](examples/prompt_and_response/prompt_template/AI_Code_Audit_Prompt.md) | [`AI_Code_Audit_LLM_Response.md`](examples/prompt_and_response/llm_response/AI_Code_Audit_LLM_Response.md) |
-
-These examples demonstrate how zero-noise runtime context changes the quality of AI reasoning — from vague, speculative analysis to precise, causally grounded understanding.
-
 ## Runtime Evidence Archive
 
-The [`evidence/`](evidence/) directory contains case studies from **real open-source projects** where runtime evidence was used to diagnose framework-level issues that static analysis alone could not solve. Unlike the `examples/` above, these are not controlled demonstrations — they are real bugs, confirmed by the upstream project maintainers, where the runtime calltree was the key artifact that revealed the root cause.
+The [`evidence/`](evidence/) directory contains case studies from **real open-source projects** where runtime evidence was used to diagnose framework-level issues that static analysis alone could not solve. These are real bugs, confirmed by the upstream project maintainers, where the runtime calltree was the key artifact that revealed the root cause.
 
 Each case study includes the raw runtime artifacts (calltree, condition evaluation reports), the denoised context sent to the LLM, and the LLM's diagnostic response.
 

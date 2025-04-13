@@ -22,7 +22,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-
 public class DataStructuring {
 
     static class BlockInfo {
@@ -383,7 +382,9 @@ public class DataStructuring {
             if (trace.mergedFrom != null) {
                 tObj.put("merged_from", trace.mergedFrom);
             }
-            // block_trace 已移除
+            
+            // Restored block_trace for CallTreeAnalyzer to process executed blocks
+            tObj.put("block_trace", trace.blockIds);
 
             List<String> fileOrder = new ArrayList<>();
             Map<String, List<String>> methodOrderInFile = new HashMap<>();

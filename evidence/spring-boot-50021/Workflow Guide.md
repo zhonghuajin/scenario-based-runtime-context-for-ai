@@ -10,8 +10,7 @@ cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk1
 ### 2.1 Configure the Target Directories for Instrumentation
 Add the following paths to `target-folders.txt`:
 ```text
-/path/to/spring-boot/module
-/path/to/spring-boot/core
+/path/to/spring-boot/spring-boot-project
 ```
 
 ### 2.2 Execute Instrumentation
@@ -33,16 +32,8 @@ subprojects {
 	repositories {
 		mavenCentral()
 +       maven {
-+           url = uri("file:////path/to/your/maven/repository")
-+       }		
-		maven {
-			name = "Shibboleth Releases"
-			url = "https://build.shibboleth.net/nexus/content/repositories/releases"
-			content {
-				includeGroup "org.opensaml"
-				includeGroup "net.shibboleth"
-			}
-		}
++           url = uri("file:///D:/maven/repository")
++       }	
 		spring.mavenRepositories()
 	}
 
@@ -50,7 +41,7 @@ subprojects {
 +		dependencies {
 +			implementation "com.example:instrumentor-log-monitor:1.0-SNAPSHOT"
 +		}
-+	}	
+	}		
 
 	configurations.all {
 		resolutionStrategy.cacheChangingModulesFor 0, "minutes"
@@ -81,11 +72,10 @@ Apply the following changes:
 repositories {
 	mavenCentral()
 +   maven {
-+       url = uri("file:////path/to/your/maven/repository")
-+   }			
++       url = uri("file:///D:/maven/repository")
++   }		
 	spring.mavenRepositoriesFor("${springFrameworkVersion}")
 	gradlePluginPortal()
-	maven { url = "https://repo.spring.io/snapshot" }
 }
 
 +// skipAllTests: Controlled by system property -D to ensure it takes effect for buildSrc as well
@@ -105,21 +95,22 @@ repositories {
 
 ### 3.3 Compile
 Switch to the Java version required by the specific Spring Boot version (e.g., Spring Boot 4.0.5 requires Java 25), then run:
-```bash
-cd /path/to/spring-boot; ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon  --refresh-dependencies -DskipAllTests -x :cli:spring-boot-cli:fullJar -x :cli:spring-boot-cli:publishToMavenLocal -x :documentation:spring-boot-docs:publishToMavenLocal 
+```powershell
+$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path";
+cd /path/to/spring-boot; ./gradlew clean publishToMavenLocal -x :spring-boot-project:spring-boot-docs:publishToMavenLocal -x :spring-boot-project:spring-boot-tools:spring-boot-cli:publishToMavenLocal --no-build-cache -DskipAllTests
 ```
 
 # 4. Test the Upstream Project
 
-Taking issue `#49854` as an example:
+Taking issue `#50021` as an example:
 ```powershell
-$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME\bin;$env:Path"; cd /path/to/spring-boot-pathpatternrequestmatcher;  mvn clean test
+$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path"; cd /path/to/50021-reproduce-project;  mvn spring-boot:run
 ```
 *Note:* Keep only one test class that can reproduce the bug (e.g., keep only `MockWithSecurityFilterChainTest.java` and delete the rest) to avoid log explosion.
 
 After the tests finish, the instrumentation logs will be automatically saved. For example:
-* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-20260411_203220-junit-listener.txt`
-* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-20260411_203220-junit-listener.txt`
+* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt`
+* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt`
 
 # 5. Restore Spring Boot Source to Clean State 
 
@@ -134,9 +125,9 @@ cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk1
 
 .\process-logs-demo.ps1 `
     -TargetFoldersFile ".\target-folders.txt" `
-    -LogFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-20260411_203220-junit-listener.txt" `
+    -LogFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt" `
     -CommentMappingFile ".\comment-mapping.txt" `
-    -EventsFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-20260411_203220-junit-listener.txt"
+    -EventsFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt"
 ```
 Upon successful execution, the following files will be generated in the current directory:
 * `final-output-calltree.json`

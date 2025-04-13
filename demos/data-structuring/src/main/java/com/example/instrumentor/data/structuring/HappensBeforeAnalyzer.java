@@ -12,7 +12,6 @@ import java.util.Set;
 
 public class HappensBeforeAnalyzer {
 
-    
     static class VectorClock {
         Map<String, Integer> clocks = new HashMap<>();
 
@@ -42,7 +41,6 @@ public class HappensBeforeAnalyzer {
         }
     }
 
-    
     static class SyncState {
         String lastThread;
         String lastAction;
@@ -59,12 +57,10 @@ public class HappensBeforeAnalyzer {
         }
     }
 
-    
     public static JsonObject analyzeEvents(String logData) {
         JsonObject result = new JsonObject();
         JsonArray syncRelations = new JsonArray();
         JsonArray dataRaces = new JsonArray();
-        
         
         JsonObject possibleTaintFlows = new JsonObject();
         possibleTaintFlows.addProperty("description", "These are only potential propagation paths based on happens-before relationships and read/write order analysis. Treating inter-thread communication points as sources and sinks, they can be used for further single-thread or cross-thread taint propagation analysis.");
@@ -75,12 +71,8 @@ public class HappensBeforeAnalyzer {
             Map<String, VectorClock> threadClocks = new HashMap<>();
             Map<String, SyncState> objectSyncStates = new HashMap<>();
             
-            
             Map<String, SyncState> lastWriteStates = new HashMap<>();
-            
             Map<String, Map<String, SyncState>> itemWriteStates = new HashMap<>();
-            
-            
             Map<String, Set<String>> threadReadTaints = new HashMap<>();
 
             while ((line = reader.readLine()) != null) {
@@ -95,14 +87,12 @@ public class HappensBeforeAnalyzer {
                 String obj = parts[3];
                 String item = parts.length > 4 ? parts[4] : "-";
 
-                
                 threadClocks.putIfAbsent(thread, new VectorClock());
                 threadReadTaints.putIfAbsent(thread, new HashSet<>());
                 
                 VectorClock currentClock = threadClocks.get(thread);
                 currentClock.increment(thread);
 
-                
                 if (action.contains("SYNC_EXIT") || action.contains("LOCK_RELEASE") ||
                     action.contains("CONDITION_SIGNAL") || action.contains("LATCH_COUNT_DOWN") ||
                     action.contains("TASK_COMPLETE") ||
@@ -147,13 +137,11 @@ public class HappensBeforeAnalyzer {
                     }
                 }
 
-                
                 if (action.contains("SHARED_VARIABLE")) {
                     String varName = action.contains("field=") ? action.split("field=")[1].split(" ")[0] : obj;
 
                     if (action.contains("WRITE")) {
                         SyncState currentWriteState = new SyncState(thread, action, time, currentClock, item);
-                        
                         
                         SyncState prevWrite = lastWriteStates.get(varName);
                         if (!action.contains("volatile") && prevWrite != null && !prevWrite.lastThread.equals(thread)) {
@@ -178,10 +166,8 @@ public class HappensBeforeAnalyzer {
                             }
                         }
 
-                        
                         lastWriteStates.put(varName, currentWriteState);
                         itemWriteStates.computeIfAbsent(varName, k -> new HashMap<>()).put(item, currentWriteState);
-                        
                         
                         Set<String> currentTaints = threadReadTaints.get(thread);
                         if (!currentTaints.isEmpty()) {
@@ -206,7 +192,6 @@ public class HappensBeforeAnalyzer {
                         Map<String, SyncState> varItemWrites = itemWriteStates.get(varName);
                         SyncState actualWrite = (varItemWrites != null) ? varItemWrites.get(item) : null;
                         
-                        
                         threadReadTaints.get(thread).add(varName);
                         
                         if (actualWrite != null && !actualWrite.lastThread.equals(thread)) {
@@ -229,7 +214,6 @@ public class HappensBeforeAnalyzer {
                             flow.addProperty("description", String.format("Potential data flow via %s: %s -> %s", 
                                     varName, actualWrite.lastThread, thread));
                             flowsArray.add(flow);
-                            
                             
                             if (!action.contains("volatile") && !actualWrite.clock.happensBefore(currentClock)) {
                                 JsonObject race = new JsonObject();

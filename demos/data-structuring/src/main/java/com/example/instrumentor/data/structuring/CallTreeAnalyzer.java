@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-
 public class CallTreeAnalyzer {
 
     private static final Gson GSON = new GsonBuilder()
@@ -52,7 +51,7 @@ public class CallTreeAnalyzer {
                 CallNode tree = buildCallTree(trace, blockToSig, sigToSource);
                 attachMetadata(tree, sigToSource, sigToFile);
 
-                analyses.add(new ThreadAnalysis(name, order, tree));
+                analyses.add(new ThreadAnalysis(name, order, trace, tree));
             }
 
             return generateJson(analyses);
@@ -193,15 +192,17 @@ public class CallTreeAnalyzer {
                 current.children.add(node);
                 current = node;
                 currentSig = targetSig;
+                current.executedBlocks.add(blockId);
 
             } else if (currentSig.equals(targetSig)) {
-                // 同一个方法内，继续
+                current.executedBlocks.add(blockId);
 
             } else {
                 CallNode ancestor = findAncestor(current, targetSig);
                 if (ancestor != null) {
                     current = ancestor;
                     currentSig = targetSig;
+                    current.executedBlocks.add(blockId);
                     continue;
                 }
 
@@ -215,6 +216,7 @@ public class CallTreeAnalyzer {
                 current.children.add(node);
                 current = node;
                 currentSig = targetSig;
+                current.executedBlocks.add(blockId);
             }
         }
         return root;
@@ -277,6 +279,7 @@ public class CallTreeAnalyzer {
         String signature;
         String source;
         String filePath;
+        List<Integer> executedBlocks = new ArrayList<>();
         List<CallNode> children = new ArrayList<>();
         CallNode parent;
 
@@ -288,11 +291,13 @@ public class CallTreeAnalyzer {
     static class ThreadAnalysis {
         String name;
         int order;
+        List<Integer> blockTrace;
         CallNode callTree;
 
-        ThreadAnalysis(String name, int order, CallNode tree) {
+        ThreadAnalysis(String name, int order, List<Integer> blockTrace, CallNode tree) {
             this.name = name;
             this.order = order;
+            this.blockTrace = blockTrace;
             this.callTree = tree;
         }
     }
@@ -305,6 +310,10 @@ public class CallTreeAnalyzer {
             Map<String, Object> threadMap = new LinkedHashMap<>();
             threadMap.put("name", ta.name);
             threadMap.put("order", ta.order);
+            
+            if (ta.blockTrace != null && !ta.blockTrace.isEmpty()) {
+                threadMap.put("block_trace", ta.blockTrace);
+            }
 
             CallNode rootNode = ta.callTree;
             if (rootNode.children.isEmpty()) {
@@ -332,6 +341,10 @@ public class CallTreeAnalyzer {
 
         if (node.filePath != null) {
             map.put("file", node.filePath);
+        }
+        
+        if (!node.executedBlocks.isEmpty()) {
+            map.put("executed_blocks", node.executedBlocks);
         }
 
         if (node.source != null) {
