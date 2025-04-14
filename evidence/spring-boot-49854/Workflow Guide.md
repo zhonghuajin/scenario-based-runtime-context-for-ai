@@ -1,3 +1,12 @@
+# Additional Note
+
+This workflow is designed to instrument and analyze the Spring Boot source code to locate the root cause of the issue reported in:
+
+**https://github.com/spring-projects/spring-boot/issues/49854**
+
+The steps outlined below capture the exact process used to reproduce the bug, collect runtime context, and prepare the data for AI-assisted bug localization.
+
+---
 
 # 1. Compile the Instrumentation Tool
 
@@ -106,7 +115,8 @@ repositories {
 ### 3.3 Compile
 Switch to the Java version required by the specific Spring Boot version (e.g., Spring Boot 4.0.5 requires Java 25), then run:
 ```bash
-cd /path/to/spring-boot; ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon  --refresh-dependencies -DskipAllTests -x :cli:spring-boot-cli:fullJar -x :cli:spring-boot-cli:publishToMavenLocal -x :documentation:spring-boot-docs:publishToMavenLocal 
+cd /path/to/spring-boot
+./gradlew clean publishToMavenLocal --no-build-cache --no-daemon  --refresh-dependencies -DskipAllTests -x :cli:spring-boot-cli:fullJar -x :cli:spring-boot-cli:publishToMavenLocal -x :documentation:spring-boot-docs:publishToMavenLocal 
 ```
 
 # 4. Test the Upstream Project

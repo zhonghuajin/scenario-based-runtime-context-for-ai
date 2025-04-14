@@ -2,7 +2,7 @@
 
 This workflow is designed to instrument and analyze the Spring Boot source code to locate the root cause of the issue reported in:
 
-**https://github.com/spring-projects/spring-boot/issues/50021**
+**https://github.com/spring-projects/spring-boot/issues/49951**
 
 The steps outlined below capture the exact process used to reproduce the bug, collect runtime context, and prepare the data for AI-assisted bug localization.
 
@@ -19,7 +19,8 @@ cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk1
 ### 2.1 Configure the Target Directories for Instrumentation
 Add the following paths to `target-folders.txt`:
 ```text
-/path/to/spring-boot/spring-boot-project
+/path/to/spring-boot/module
+/path/to/spring-boot/core
 ```
 
 ### 2.2 Execute Instrumentation
@@ -41,8 +42,16 @@ subprojects {
 	repositories {
 		mavenCentral()
 +       maven {
-+           url = uri("file:///D:/maven/repository")
-+       }	
++           url = uri("file:////path/to/your/maven/repository")
++       }		
+		maven {
+			name = "Shibboleth Releases"
+			url = "https://build.shibboleth.net/nexus/content/repositories/releases"
+			content {
+				includeGroup "org.opensaml"
+				includeGroup "net.shibboleth"
+			}
+		}
 		spring.mavenRepositories()
 	}
 
@@ -50,7 +59,7 @@ subprojects {
 +		dependencies {
 +			implementation "com.example:instrumentor-log-monitor:1.0-SNAPSHOT"
 +		}
-	}		
++	}	
 
 	configurations.all {
 		resolutionStrategy.cacheChangingModulesFor 0, "minutes"
@@ -81,10 +90,11 @@ Apply the following changes:
 repositories {
 	mavenCentral()
 +   maven {
-+       url = uri("file:///D:/maven/repository")
-+   }		
++       url = uri("file:////path/to/your/maven/repository")
++   }			
 	spring.mavenRepositoriesFor("${springFrameworkVersion}")
 	gradlePluginPortal()
+	maven { url = "https://repo.spring.io/snapshot" }
 }
 
 +// skipAllTests: Controlled by system property -D to ensure it takes effect for buildSrc as well
@@ -104,24 +114,22 @@ repositories {
 
 ### 3.3 Compile
 Switch to the Java version required by the specific Spring Boot version (e.g., Spring Boot 4.0.5 requires Java 25), then run:
-```powershell
-$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path";
-cd /path/to/spring-boot; ./gradlew clean publishToMavenLocal -x :spring-boot-project:spring-boot-docs:publishToMavenLocal -x :spring-boot-project:spring-boot-tools:spring-boot-cli:publishToMavenLocal --no-build-cache -DskipAllTests
+```bash
+cd /path/to/spring-boot
+./gradlew clean publishToMavenLocal --no-build-cache --no-daemon  --refresh-dependencies -DskipAllTests -x :cli:spring-boot-cli:fullJar -x :cli:spring-boot-cli:publishToMavenLocal -x :documentation:spring-boot-docs:publishToMavenLocal 
 ```
 
 # 4. Test the Upstream Project
 
-Taking issue `#50021` as an example:
+Taking issue `#49854` as an example:
 ```powershell
-$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path"; cd /path/to/spring-boot-50021
-mvn clean compile dependency:copy-dependencies -DoutputDirectory=target/lib
-java -cp "target\classes;target\lib\*" com.example.ReproducerApplication
+$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME\bin;$env:Path"; cd /path/to/spring-boot-49951;  mvn clean test
 ```
 *Note:* Keep only one test class that can reproduce the bug (e.g., keep only `MockWithSecurityFilterChainTest.java` and delete the rest) to avoid log explosion.
 
 After the tests finish, the instrumentation logs will be automatically saved. For example:
-* `/path/to/spring-boot-50021/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt`
-* `/path/to/spring-boot-50021/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt`
+* `/path/to/spring-boot-49951/instrumentor-events-yyyymmdd_hhmmss-junit-listener.txt`
+* `/path/to/spring-boot-49951/instrumentor-log-yyyymmdd_hhmmss-junit-listener.txt`
 
 # 5. Restore Spring Boot Source to Clean State 
 
@@ -136,9 +144,9 @@ cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk1
 
 .\process-logs-demo.ps1 `
     -TargetFoldersFile ".\target-folders.txt" `
-    -LogFile "/path/to/spring-boot-50021/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt" `
+    -LogFile "/path/to/spring-boot-49951/instrumentor-log-yyyymmdd_hhmmss-junit-listener.txt" `
     -CommentMappingFile ".\comment-mapping.txt" `
-    -EventsFile "/path/to/spring-boot-50021/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt"
+    -EventsFile "/path/to/spring-boot-49951/instrumentor-events-yyyymmdd_hhmmss-junit-listener.txt"
 ```
 Upon successful execution, the following files will be generated in the current directory:
 * `final-output-calltree.json`
@@ -158,3 +166,12 @@ Follow the interactive prompts to input the relevant information. Finally, the f
 
 # 8. Submit the Prompt to AI for Analysis and Get Results
 Feed the generated prompt to the AI to analyze and retrieve the bug localization results.
+
+
+# 9. Spring Boot Official Fix Reference
+
+The core fix identified through the above analysis corresponds exactly to the official Spring Boot commit:
+
+**Commit:** [edcc937adde0f168e3e9781ba19c6e923864f9b9](https://github.com/spring-projects/spring-boot/commit/edcc937adde0f168e3e9781ba19c6e923864f9b9)
+
+This commit introduces the essential changes required to resolve the underlying issue. While the local instrumentation and analysis workflow may include additional defensive safeguards that are not present in the official patch (e.g., extra null checks, extended logging, or context propagation hardening), the **core remediation logic is fully aligned** with the upstream Spring Boot fix.

@@ -1,1 +1,2 @@
-C:\TechLearning\ai-test-project\spring-boot-bug-fix-projects\3.5.13\spring-boot\spring-boot-project
+C:\TechLearning\ai-test-project\spring-boot\module
+C:\TechLearning\ai-test-project\spring-boot\core
