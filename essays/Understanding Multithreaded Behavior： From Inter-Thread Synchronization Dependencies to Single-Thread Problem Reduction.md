@@ -1,5 +1,3 @@
-
-
 # Understanding Multithreaded Behavior: From Inter-Thread Synchronization Dependencies to Single-Thread Problem Reduction
 
 > This article discusses a general technical perspective on understanding multithreaded system behavior. It does not involve any specific company's business systems, implementation details, or non-public information.
@@ -91,15 +89,19 @@ flowchart TD
 
 Under this line of thinking, the most important corollary is:
 
-> **If synchronization dependency points are accurately identified, then the problem of understanding multithreaded behavior can, to a large extent, be transformed into a single-threaded problem.**
+> **If synchronization dependency points are accurately identified, then for the portion of inter-thread data flow that passes through those synchronization points, the problem of understanding multithreaded behavior can be transformed into a single-threaded problem.**
 
 The reasoning is as follows: within any single thread, execution order is still deterministic. Influence from other threads can only enter through the identified synchronization points. If we treat these synchronization points as "entry and exit points for information"—that is, as sources and sinks—then tracing how a piece of information propagates from an entry point to an exit point within each thread is, in fact, a classic single-threaded propagation analysis problem.
 
-The significance of this transformation is substantial:
+The significance of this transformation is real, but must be stated precisely:
 
-Single-threaded causal tracing is a problem domain that has been extensively studied, validated through practice, and supported by relatively mature tooling, with comparatively high accuracy. Multithreaded interleaving analysis, on the other hand, has always been one of the areas where accuracy is hardest to guarantee.
+Single-threaded causal tracing is a problem domain that has been extensively studied, validated through practice, and supported by relatively mature tooling. Multithreaded interleaving analysis, on the other hand, has always been one of the areas where accuracy is hardest to guarantee. To the extent that the former can substitute for the latter, analytical difficulty is genuinely reduced.
 
-If, through accurate identification of synchronization dependencies, the latter can be transformed into the former, then the accuracy of the analysis gains a much more solid foundation. Not because the multithreaded problem itself became simpler, but because **we found a way to decompose it such that each subproblem falls within a tractable analytical framework**.
+However, there is a fundamental boundary that must be acknowledged here, not deferred to a later section: **this transformation is exact only for the data flows that actually pass through identified synchronization points.** In a correctly synchronized program—one where all inter-thread data sharing is mediated by proper synchronization mechanisms—this covers all inter-thread data flow, and the transformation is complete.
+
+But programs are not always correctly synchronized. When threads share data without proper synchronization—what the concurrency literature calls a *data race*—information flows between threads through a channel that has no corresponding happens-before edge. These flows are, by definition, invisible to synchronization-dependency-based analysis. The transformation does not account for them, and any downstream analysis that relies solely on the synchronization dependency graph will have a blind spot at exactly these points.
+
+This is not a minor edge case. In the context of security analysis, data races are often precisely the flows of greatest concern—unsanitized data reaching a thread through an unprotected path is a class of vulnerability in its own right. I will discuss practical strategies for dealing with this limitation in the next section, but the limitation itself is inherent to the model and should not be understated.
 
 ---
 
@@ -113,7 +115,13 @@ Second, **the value of this approach lies in understanding one specific behavior
 
 Third, **the coverage of synchronization mechanisms directly determines the completeness of the analysis**. If some form of inter-thread communication is not taken into account, then the influence transmitted through that mechanism will become a blind spot in the analysis. This requires a systematic understanding of the concurrency primitives in the target language and runtime environment, and demands a clear-eyed awareness of the boundaries of that coverage.
 
-Fourth, **after the transformation into single-threaded problems, the accuracy of the analysis still depends on the quality of the single-threaded analysis itself**. This approach reduces the structural complexity of the problem, but does not eliminate all difficulties. It merely decomposes an extremely hard problem into a number of relatively more tractable subproblems.
+Fourth, **unsynchronized shared access—data races—constitutes an inherent blind spot of this model, and must be addressed explicitly rather than ignored.** As discussed in the previous section, if two threads access the same shared state without any synchronization mechanism mediating the access, no happens-before edge exists between them, and no synchronization-dependency-based analysis will detect the data flow.
+
+In practice, this means a choice must be made. One option is the *optimistic* strategy: assume all inter-thread data flow passes through synchronization points, and accept that data races will cause missed flows. This yields precise results for correctly synchronized programs but can silently miss critical flows in buggy ones. The other option is the *conservative* strategy: treat every shared variable that is accessed by multiple threads without a synchronization relationship as a potential channel for inter-thread data flow, even though no happens-before edge exists. This avoids silent omissions but introduces a significant number of flows that may not correspond to real inter-thread influence, increasing noise in downstream analysis.
+
+A more pragmatic middle path is to **separate the two concerns**: use synchronization dependencies to model the well-structured inter-thread flows, and simultaneously flag all unsynchronized shared accesses as a distinct category of findings—potential data races that represent both concurrency bugs in their own right and potential blind spots in the synchronization-based analysis. This does not eliminate the limitation, but it makes the limitation visible and actionable rather than silent.
+
+Fifth, **after the transformation into single-threaded problems, the accuracy of the analysis still depends on the quality of the single-threaded analysis itself**. This approach reduces the structural complexity of the problem, but does not eliminate all difficulties. It decomposes an extremely hard problem into a number of relatively more tractable subproblems—but each subproblem must still be solved well for the overall result to be meaningful.
 
 ---
 
@@ -141,13 +149,15 @@ This line of thinking carries an additional layer of significance when AI become
 
 One of the most prominent difficulties large models face when analyzing code is multithreading. The reason is straightforward: multithreaded behavior depends on execution timing, and timing information is almost invisible in static code. Giving a model the source code of a multithreaded program and asking it to reason about the cause of a concurrent behavior is essentially asking it to guess the interleaving order of threads without any runtime information. This is extremely difficult for any reasoning system.
 
-But if, in the context provided to the model, the synchronization dependencies between threads have already been identified, then what the model faces is no longer an open-ended problem requiring it to guess interleaving orders. It faces a set of known inter-thread connection points, and between those connection points, execution fragments that can be traced using single-threaded logic.
+But if, in the context provided to the model, the synchronization dependencies between threads have already been identified, then what the model faces is no longer a fully open-ended problem requiring it to guess interleaving orders. It faces a set of known inter-thread connection points, and between those connection points, execution fragments that can be traced using single-threaded logic.
 
-This is entirely consistent with the earlier discussion about "providing models with context that is more suitable for reasoning":
+This is consistent with the earlier discussion about "providing models with context that is more suitable for reasoning":
 
 > **It is not about making the model more powerful, but about making the input the model receives closer to the essential structure of the problem.**
 
-Multithreaded analysis is hard in large part because the way the problem is presented (interleaved, nondeterministic, implicitly correlated) fundamentally mismatches the mode of reasoning that both humans and AI are best at (sequential, causal, locally traceable). The identification of synchronization dependencies and the transformation into single-threaded subproblems is, in essence, an effort to narrow this mismatch.
+Multithreaded analysis is hard in large part because the way the problem is presented (interleaved, nondeterministic, implicitly correlated) fundamentally mismatches the mode of reasoning that both humans and AI are best at (sequential, causal, locally traceable). The identification of synchronization dependencies and the transformation into single-threaded subproblems narrows this mismatch for the portion of behavior that is mediated by synchronization.
+
+It is worth noting, however, that this does not make AI-assisted analysis complete. The data-race blind spot discussed earlier applies equally here: if the model is given only the synchronization dependency graph, it will have no basis for reasoning about data flows that bypass synchronization. In practice, this means the model should also be informed of potential unsynchronized shared accesses, so that it can flag—rather than silently ignore—areas where the synchronization-based view may be incomplete.
 
 ---
 
@@ -163,13 +173,13 @@ Ten threads running independently are not hard to understand. But a single unide
 
 Static analysis can tell you where inter-thread interactions "might" exist. But whether one actually occurred "this time" can only be answered by the runtime. For understanding specific behavior, the latter is what is truly needed.
 
-### 3. Transforming a multithreaded problem into single-threaded problems is not simplification, but structural decomposition
+### 3. Transforming a multithreaded problem into single-threaded problems is structural decomposition, not lossless equivalence
 
-The "transformation" here is not about ignoring the complexity of multithreading. It is about decomposing an overall intractable problem into a number of locally tractable subproblems by identifying precise boundaries between threads. Decomposition itself is an effective response to complexity.
+The "transformation" here is not about ignoring the complexity of multithreading. It is about decomposing an overall intractable problem into a number of locally tractable subproblems by identifying precise boundaries between threads. But the decomposition is exact only for data flows that pass through identified synchronization points. Flows that bypass synchronization—data races—fall outside the scope of this decomposition and must be handled through complementary means. Acknowledging this boundary is essential to applying the approach responsibly.
 
 ### 4. This direction is likely even more valuable for AI-assisted analysis than for manual analysis
 
-Human engineers with sufficient experience can sometimes rely on intuition to skip some reasoning steps. But AI, when facing multithreaded code, depends almost entirely on the structure of its input information. Providing AI with context in which synchronization dependencies have been identified and single-threaded tracing is feasible may be a precondition for making AI genuinely useful in multithreaded analysis.
+Human engineers with sufficient experience can sometimes rely on intuition to skip some reasoning steps. But AI, when facing multithreaded code, depends almost entirely on the structure of its input information. Providing AI with context in which synchronization dependencies have been identified and single-threaded tracing is feasible may be a precondition for making AI genuinely useful in multithreaded analysis—provided the context also makes explicit where the synchronization-based view has known gaps.
 
 ---
 
@@ -179,8 +189,9 @@ If I compress the core position of this article, it is roughly this:
 
 1. **Understanding multithreaded system behavior hinges on identifying the synchronization dependencies that actually occurred between threads, rather than attempting to observe all activities of all threads simultaneously.**
 2. **Accurate identification of synchronization dependencies must rely on runtime facts. Static inference can provide candidates, but cannot substitute for facts.**
-3. **Once synchronization dependency points are identified, multithreaded behavior understanding can be structurally transformed into single-threaded causal tracing problems bounded by synchronization points, substantially reducing analytical difficulty and improving accuracy.**
-4. **This transformation is especially important for AI-assisted code understanding, because it converts the problem from nondeterministic interleaving—which models struggle with—into sequential causal reasoning, which models are far better equipped to handle.**
+3. **Once synchronization dependency points are identified, the portion of multithreaded behavior that is mediated by those synchronization points can be structurally transformed into single-threaded causal tracing problems, substantially reducing analytical difficulty and improving accuracy within that scope.**
+4. **Data flows that bypass synchronization—data races—are invisible to this model. A responsible application of this approach must detect or conservatively flag unsynchronized shared accesses as potential blind spots, rather than silently assuming all inter-thread communication is well-synchronized.**
+5. **This transformation is especially important for AI-assisted code understanding, because it converts the problem from nondeterministic interleaving—which models struggle with—into sequential causal reasoning, which models are far better equipped to handle.**
 
 ---
 
@@ -188,8 +199,10 @@ If I compress the core position of this article, it is roughly this:
 
 I would like to treat this article as a public record of a technical position:
 
-> **Understanding specific behavior in multithreaded systems should not be treated as a monolithic problem that requires grasping all threads simultaneously. If we can accurately identify the synchronization dependencies between threads and use them as bridges to transform the problem into single-threaded causal tracing, then we obtain a path that structurally reduces the difficulty of multithreaded analysis.**
+> **Understanding specific behavior in multithreaded systems should not be treated as a monolithic problem that requires grasping all threads simultaneously. If we can accurately identify the synchronization dependencies between threads and use them as bridges to transform the problem into single-threaded causal tracing, then we obtain a path that structurally reduces the difficulty of multithreaded analysis for the portion of behavior that passes through those synchronization points.**
 
-This is not a finished conclusion, but a direction that has been repeatedly reinforced through long-term engineering practice—one that has become increasingly difficult to ignore.
+This path has a clear boundary: it sees what synchronization mechanisms make visible, and it is blind to what bypasses them. For correctly synchronized programs, this boundary is not a practical limitation. For programs with data races, complementary detection of unsynchronized shared access is necessary to prevent silent blind spots.
 
-I believe that in an era where AI is becoming ever more deeply involved in code understanding and system analysis, **how to make the complexity of multithreading more amenable to reasoning** will become an increasingly important question. And the path that begins from synchronization dependencies and transforms toward single-threaded problems deserves to be taken seriously.
+This is not a finished conclusion, but a direction that has been repeatedly reinforced through long-term engineering practice—one whose value and whose limits have both become increasingly difficult to ignore.
+
+I believe that in an era where AI is becoming ever more deeply involved in code understanding and system analysis, **how to make the complexity of multithreading more amenable to reasoning** will become an increasingly important question. And the path that begins from synchronization dependencies and transforms toward single-threaded problems—applied with honest awareness of where it does and does not reach—deserves to be taken seriously.
