@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.example</groupId>
+        <artifactId>demos</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>instrumentor-log-monitor</artifactId>
+    <name>Instrumentor Log Monitor</name>
+    <description>Instrumentation log monitoring service based on JDK HttpServer, automatically started via SPI during the first staining</description>
+
+    <dependencies>
+        <!-- Dependency on instrumentor-log-recorder module (InstrumentLog + LogLifecycleHook) -->
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>instrumentor-log-recorder</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.example.instrumentor.monitor.LogMonitorServer</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
