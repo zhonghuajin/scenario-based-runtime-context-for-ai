@@ -93,7 +93,7 @@ def main():
     print("Please enter the required information as prompted (press Enter directly to skip optional items)\n")
 
     # 1. Collect bug symptom
-    bug_symptom = input("🐞 1. Please describe the [Observable Symptom] (e.g., In the CountDownLatch test, the waiter thread occasionally reads sharedData as 0 instead of the expected 6.):\n> ").strip()
+    bug_symptom = input("🐞 1. Please describe the [Observable Symptom] (e.g., When the system (or task tracker) reports that \"all tasks are completed,\" retrieving the batch results should return the complete and final computed data for all tasks. But the system prematurely signals that tasks are \"completed\" before the data is actually saved in the background. As a result, when the user fetches the results immediately after receiving the completion signal, they receive empty or incomplete data.):\n> ").strip()
     if not bug_symptom:
         bug_symptom = "[No specific symptom provided. Please analyze the trace data for obvious data races, deadlocks, or exceptions.]"
 
