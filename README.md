@@ -5,6 +5,27 @@
 👉 **[Read the Quick Start Guide](QUICKSTART.md)** to see how it works in practice.
 👉 **[Browse the Examples](examples/)** to see real pipeline outputs and AI responses without running anything.
 
+---
+
+## ⚡ Why This Project Exists: Fighting AI Hallucination
+
+**The Problem:** When AI analyzes code, it only sees static structure — files, symbols, and call graphs across the entire codebase. It cannot know which code paths *actually executed* for a specific scenario. So it guesses. This guessing is hallucination — AI reasoning built on assumption rather than fact.
+
+**The Solution:** This project captures **runtime evidence** from real executions and uses it to build **zero-noise, scenario-specific code context** for AI. Instead of flooding the model with the whole codebase, it gives the model only what actually happened — making AI reasoning grounded in facts, not speculation.
+
+### Static Analysis vs. Runtime Evidence
+
+| | Traditional (Static Analysis) | This Project (Runtime Evidence) |
+|---|---|---|
+| **What AI sees** | Entire codebase — hundreds of files, most irrelevant to the scenario | Only the code paths that *actually executed* for the specific scenario |
+| **Context quality** | High noise, low relevance — AI must guess what matters | Zero noise, high relevance — every line in context actually ran |
+| **AI reasoning** | Speculative: *"This code might be related..."* | Factual: *"These are the exact paths that executed"* |
+| **Hallucination risk** | High — AI fills gaps with plausible-sounding but wrong answers | Low — AI reasons from verified runtime facts |
+
+> **In short:** Runtime evidence turns AI from a guesser into a witness.
+
+---
+
 ## Overview
 
 This repository explores a simple but important question:
