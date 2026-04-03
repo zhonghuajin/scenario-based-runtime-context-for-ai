@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class LogMonitorServer implements LogLifecycleHook {
 
@@ -153,15 +154,44 @@ public class LogMonitorServer implements LogLifecycleHook {
     
     private String formatLogSnapshot(LinkedHashMap<Long, List<Integer>> snapshot) {
         StringBuilder sb = new StringBuilder();
-        sb.append("# InstrumentLog Dump @ ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
-        
-        int order = 1;
+
+        // 1. In-memory deduplication: group threads by their canonical key
+        //    (the sorted, distinct set of block IDs they visited)
+        LinkedHashMap<String, List<Map.Entry<Long, List<Integer>>>> groups = new LinkedHashMap<>();
         for (Map.Entry<Long, List<Integer>> entry : snapshot.entrySet()) {
-            long threadId = entry.getKey();
-            List<Integer> logs = entry.getValue();
-            
-            sb.append(String.format("[Thread-%d] (Appearance Order: #%d, Count: %d)\n", threadId, order++, logs.size()));
-            
+            String canonicalKey = entry.getValue().stream()
+                    .distinct()
+                    .sorted()
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
+            groups.computeIfAbsent(canonicalKey, k -> new ArrayList<>()).add(entry);
+        }
+
+        // 2. Write header with deduplication stats
+        int originalCount = snapshot.size();
+        int dedupedCount = groups.size();
+        sb.append("# InstrumentLog (Deduplicated) @ ").append(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).append("\n");
+        sb.append("# Original thread count: ").append(originalCount)
+          .append(", Deduplicated group count: ").append(dedupedCount).append("\n\n");
+
+        // 3. Output one representative thread per group
+        int order = 1;
+        for (Map.Entry<String, List<Map.Entry<Long, List<Integer>>>> groupEntry : groups.entrySet()) {
+            List<Map.Entry<Long, List<Integer>>> group = groupEntry.getValue();
+            Map.Entry<Long, List<Integer>> representative = group.get(0);
+            long threadId = representative.getKey();
+            List<Integer> logs = representative.getValue();
+
+            sb.append(String.format("[Thread-%d] (Group Order: #%d, Count: %d)", threadId, order++, logs.size()));
+
+            if (group.size() > 1) {
+                String mergedThreads = group.stream()
+                        .map(e -> "Thread-" + e.getKey())
+                        .collect(Collectors.joining(", "));
+                sb.append(String.format("  # Merged from %d threads: %s", group.size(), mergedThreads));
+            }
+            sb.append("\n");
+
             if (!logs.isEmpty()) {
                 sb.append("  ");
                 for (int i = 0; i < logs.size(); i++) {
