@@ -1,29 +1,38 @@
 ﻿<#
 .SYNOPSIS
     Executes the instrumentation build, instrumentation process, and testing flow.
-.PARAMETER TargetFolder
-    Specifies the target folder path for instrumentation (optional).
+.PARAMETER TargetFolders
+    Specifies one or more target folder paths for instrumentation (space-separated string or array).
+    Defaults to a single demo folder if not specified.
 .EXAMPLE
     .\run-instrumentation-demo.ps1
+.EXAMPLE
+    .\run-instrumentation-demo.ps1 -TargetFolders ".\demos\instrumentor-test\src\main\java\com\example\instrumentor\happens"
+.EXAMPLE
+    .\run-instrumentation-demo.ps1 -TargetFolders @(".\path\to\dir1", ".\path\to\dir2")
 #>
 
 param(
-    [Parameter(Mandatory=$false, HelpMessage="Specify the target folder path for instrumentation")]
-    [string]$TargetFolder = ".\demos\instrumentor-test\src\main\java\com\example\instrumentor\happens"
+    [Parameter(Mandatory=$false, HelpMessage="Specify one or more target folder paths for instrumentation")]
+    [string[]]$TargetFolders = @(".\demos\instrumentor-test\src\main\java\com\example\instrumentor\happens")
 )
 
-# Verify path exists
-if (-not (Test-Path $TargetFolder)) {
-    Write-Error "Error: Target folder does not exist: $TargetFolder"
-    exit 1
+# Verify all paths exist
+foreach ($folder in $TargetFolders) {
+    if (-not (Test-Path $folder)) {
+        Write-Error "Error: Target folder does not exist: $folder"
+        exit 1
+    }
 }
 
-Write-Host "Target folder: $TargetFolder" -ForegroundColor Yellow
+Write-Host "Target folders: $($TargetFolders -join ', ')" -ForegroundColor Yellow
 
 # 1. Restore source code (Undo instrumentation modifications)
-Write-Host "Restoring the instrumented source folder using Git..." -ForegroundColor Cyan
-git restore $TargetFolder
-git clean -fd $TargetFolder
+Write-Host "Restoring the instrumented source folders using Git..." -ForegroundColor Cyan
+foreach ($folder in $TargetFolders) {
+    git restore $folder
+    git clean -fd $folder
+}
 
 # 2. Check Java environment variables
 Write-Host "Checking Java environment variables..." -ForegroundColor Cyan
@@ -45,20 +54,22 @@ if ($LASTEXITCODE -ne 0) {
 # 4. Execute Instrumentor related Java commands
 Write-Host "Executing code instrumentation (Instrumentor)..." -ForegroundColor Cyan
 
-# 4.1 Main instrumentation
-java -jar .\demos\instrumentor\target\instrumentor-1.0-SNAPSHOT.jar $TargetFolder
+# 4.1 Main instrumentation (pass all folders as arguments)
+java -jar .\demos\instrumentor\target\instrumentor-1.0-SNAPSHOT.jar @TargetFolders
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Main instrumentation step returned non-zero exit code: $LASTEXITCODE"
 }
 
-# 4.2 Encoding mapping
-java -jar .\demos\instrumentor-with-encoding\target\instrumentor-with-encoding-1.0-SNAPSHOT.jar map "$TargetFolder\"
+# 4.2 Encoding mapping (pass all folders as arguments)
+$mappingArgs = @("map") + ($TargetFolders | ForEach-Object { "$_\" })
+java -jar .\demos\instrumentor-with-encoding\target\instrumentor-with-encoding-1.0-SNAPSHOT.jar @mappingArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Encoding mapping step returned non-zero exit code: $LASTEXITCODE"
 }
 
-# 4.3 Activator
-java -jar .\demos\instrumentor-activator\target\instrumentor-activator-1.0-SNAPSHOT.jar activate "$TargetFolder\"
+# 4.3 Activator (pass all folders as arguments)
+$activatorArgs = @("activate") + ($TargetFolders | ForEach-Object { "$_\" })
+java -jar .\demos\instrumentor-activator\target\instrumentor-activator-1.0-SNAPSHOT.jar @activatorArgs
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Activator step returned non-zero exit code: $LASTEXITCODE"
 }

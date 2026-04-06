@@ -40,32 +40,26 @@ public class InstrumentActivator {
         }
 
         String command = args[0];
-        Path target = Paths.get(args[1]).toAbsolutePath().normalize();
-
-        if (!Files.exists(target)) {
-            System.err.println("[Error] Path does not exist: " + target);
-            System.exit(1);
-        }
 
         InstrumentActivator activator = new InstrumentActivator();
 
         switch (command) {
 
             case "activate" -> {
-                int count = activator.activate(target);
+                int total = runOnPaths(args, activator::activate);
                 System.out.println();
                 System.out.println("====================================");
                 System.out.println(" Activation Complete");
-                System.out.println(" Total replaced " + count + " comments → function calls");
+                System.out.println(" Total replaced " + total + " comments → function calls");
                 System.out.println("====================================");
             }
 
             case "deactivate" -> {
-                int count = activator.deactivate(target);
+                int total = runOnPaths(args, activator::deactivate);
                 System.out.println();
                 System.out.println("====================================");
                 System.out.println(" Restoration Complete");
-                System.out.println(" Total replaced " + count + " function calls → comments");
+                System.out.println(" Total replaced " + total + " function calls → comments");
                 System.out.println("====================================");
             }
 
@@ -77,10 +71,28 @@ public class InstrumentActivator {
         }
     }
 
+    @FunctionalInterface
+    private interface PathAction {
+        int apply(Path path) throws IOException;
+    }
+
+    private static int runOnPaths(String[] args, PathAction action) throws Exception {
+        int total = 0;
+        for (int i = 1; i < args.length; i++) {
+            Path target = Paths.get(args[i]).toAbsolutePath().normalize();
+            if (!Files.exists(target)) {
+                System.err.println("[Error] Path does not exist: " + target);
+                System.exit(1);
+            }
+            total += action.apply(target);
+        }
+        return total;
+    }
+
     private static void printUsage() {
         System.err.println("Usage:");
-        System.err.println("  InstrumentActivator activate   <Java file or directory>");
-        System.err.println("  InstrumentActivator deactivate <Java file or directory>");
+        System.err.println("  InstrumentActivator activate   <dir1|file1> [dir2] [dir3] ...");
+        System.err.println("  InstrumentActivator deactivate <dir1|file1> [dir2] [dir3] ...");
         System.err.println();
         System.err.println("Command Description:");
         System.err.println("  activate   : Replace // INST#<id> comments with function calls (execute before deployment)");

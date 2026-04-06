@@ -44,25 +44,40 @@ public class CommentMapper {
 
             
             case "map" -> {
-                Path target = Paths.get(args[1]).toAbsolutePath().normalize();
-                Path mappingOutput;
-                if (args.length >= 3) {
-                    mappingOutput = Paths.get(args[2]).toAbsolutePath().normalize();
-                } else {
-                    
-                    Path currentDir = Paths.get(System.getProperty("user.dir"));
-                    mappingOutput = currentDir.resolve("comment-mapping.txt");
+                if (args.length < 2) {
+                    System.err.println("[Error] map command requires at least one directory: map <dir1> [dir2] ... [-o mapping_file]");
+                    System.exit(1);
+                }
+
+                List<Path> targets = new ArrayList<>();
+                Path mappingOutput = null;
+                for (int i = 1; i < args.length; i++) {
+                    if ("-o".equals(args[i])) {
+                        if (i + 1 < args.length) {
+                            mappingOutput = Paths.get(args[++i]).toAbsolutePath().normalize();
+                        } else {
+                            System.err.println("[Error] -o requires a file path argument");
+                            System.exit(1);
+                        }
+                    } else {
+                        targets.add(Paths.get(args[i]).toAbsolutePath().normalize());
+                    }
+                }
+                if (mappingOutput == null) {
+                    mappingOutput = Paths.get(System.getProperty("user.dir")).resolve("comment-mapping.txt");
                 }
 
                 CommentMapper mapper = new CommentMapper();
-                mapper.buildFullMapping(target);
+                mapper.buildFullMapping(targets);
 
                 if (mapper.size() == 0) {
                     System.out.println("[Info] No instrumentation comments found. Please run CodeBlockInstrumentor first.");
                     return;
                 }
 
-                mapper.replaceCommentsInSource(target);
+                for (Path target : targets) {
+                    mapper.replaceCommentsInSource(target);
+                }
                 mapper.writeMappingFile(mappingOutput);
                 printSummary("Full mapping completed", mapper.size(), mappingOutput);
             }
@@ -89,11 +104,19 @@ public class CommentMapper {
 
             
             case "clean" -> {
-                Path target = Paths.get(args[1]).toAbsolutePath().normalize();
-                int removed = cleanInstrumentation(target);
+                if (args.length < 2) {
+                    System.err.println("[Error] clean command requires at least one directory: clean <dir1> [dir2] ...");
+                    System.exit(1);
+                }
+
+                int totalRemoved = 0;
+                for (int i = 1; i < args.length; i++) {
+                    Path target = Paths.get(args[i]).toAbsolutePath().normalize();
+                    totalRemoved += cleanInstrumentation(target);
+                }
                 System.out.println();
                 System.out.println("====================================");
-                System.out.println(" Cleanup completed. Removed " + removed + " instrumentation comment lines.");
+                System.out.println(" Cleanup completed. Removed " + totalRemoved + " instrumentation comment lines.");
                 System.out.println("====================================");
             }
 
@@ -107,13 +130,14 @@ public class CommentMapper {
 
     private static void printUsage() {
         System.err.println("Usage:");
-        System.err.println("  CommentMapper map   <Java file or directory> [mapping file path]");
+        System.err.println("  CommentMapper map   <dir1> [dir2] ... [-o mapping_file]");
         System.err.println("  CommentMapper incr  <mapping file>       <modified file1> [modified file2] ...");
-        System.err.println("  CommentMapper clean <Java file or directory>");
+        System.err.println("  CommentMapper clean <dir1> [dir2] ...");
         System.err.println();
         System.err.println("Command Description:");
         System.err.println("  map   : Full mode - Scan all files → Assign IDs → Replace → Output mapping table");
         System.err.println("  Default mapping file location: comment-mapping.txt in the current working directory");
+        System.err.println("  Use -o <path> to specify a custom mapping file output path");
         System.err.println("  incr  : Incremental mode - Process only modified files, reuse existing mappings, ensure global ID uniqueness");
         System.err.println("  clean : Remove all instrumentation comments (original format and mapped format)");
     }
@@ -130,11 +154,14 @@ public class CommentMapper {
     
 
     
-    public void buildFullMapping(Path target) throws IOException {
+    public void buildFullMapping(List<Path> targets) throws IOException {
         idToComment.clear();
         commentToId.clear();
 
-        List<Path> files = collectJavaFiles(target);
+        List<Path> files = new ArrayList<>();
+        for (Path target : targets) {
+            files.addAll(collectJavaFiles(target));
+        }
         List<String> allComments = scanOriginalComments(files);
 
         
@@ -149,6 +176,11 @@ public class CommentMapper {
         }
 
         System.out.println("[Full Scan] Found " + idToComment.size() + " instrumentation comments in total.");
+    }
+
+    
+    public void buildFullMapping(Path target) throws IOException {
+        buildFullMapping(List.of(target));
     }
 
     
