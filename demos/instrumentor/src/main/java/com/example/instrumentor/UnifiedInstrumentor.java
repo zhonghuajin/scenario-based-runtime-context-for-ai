@@ -19,7 +19,7 @@ public class UnifiedInstrumentor {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 1) {
-            System.err.println("Usage: java UnifiedInstrumentor <input.java|input_dir>");
+            System.err.println("Usage: java UnifiedInstrumentor <dir1|file1> [dir2] [dir3] ...");
             System.err.println("  - Modified files will be saved back to original locations");
             return;
         }
@@ -30,20 +30,22 @@ public class UnifiedInstrumentor {
         config.setAttributeComments(true);
         StaticJavaParser.setConfiguration(config);
 
-        Path inputPath = Path.of(args[0]).toAbsolutePath().normalize();
+        for (String arg : args) {
+            Path inputPath = Path.of(arg).toAbsolutePath().normalize();
 
-        if (!Files.exists(inputPath)) {
-            System.err.println("Error: Input path does not exist: " + inputPath);
-            System.exit(1);
-        }
+            if (!Files.exists(inputPath)) {
+                System.err.println("Error: Input path does not exist: " + inputPath);
+                System.exit(1);
+            }
 
-        if (Files.isRegularFile(inputPath)) {
-            instrumentFile(inputPath, inputPath);
-        } else if (Files.isDirectory(inputPath)) {
-            processDirectory(inputPath);
-        } else {
-            System.err.println("Error: Input path is neither a file nor a directory: " + inputPath);
-            System.exit(1);
+            if (Files.isRegularFile(inputPath)) {
+                instrumentFile(inputPath, inputPath);
+            } else if (Files.isDirectory(inputPath)) {
+                processDirectory(inputPath);
+            } else {
+                System.err.println("Error: Input path is neither a file nor a directory: " + inputPath);
+                System.exit(1);
+            }
         }
 
         
