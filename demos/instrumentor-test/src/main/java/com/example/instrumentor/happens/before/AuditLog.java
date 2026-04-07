@@ -7,10 +7,10 @@ import java.util.List;
 public class AuditLog {
 
     private final List<String> entries = Collections.synchronizedList(new ArrayList<>());
-    private volatile boolean sealed = false;
+    private volatile boolean isSealed = false;
 
     public void append(String message) {
-        if (sealed) {
+        if (isSealed) {
             throw new IllegalStateException("AuditLog has been sealed");
         }
         long ts = System.nanoTime();
@@ -19,7 +19,7 @@ public class AuditLog {
     }
 
     public void seal() {
-        sealed = true;
+        isSealed = true;
     }
 
     public List<String> getEntries() {

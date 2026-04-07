@@ -2,8 +2,6 @@
 
 This directory contains real, unedited outputs from the pipeline — so you can evaluate the approach without setting up any environment or running any code.
 
-> *The example used here is a simple multithreaded Java program to demonstrate the complete pipeline flow. For complex real-world systems (e.g., Apache ZooKeeper), where static analysis struggles with deep concurrency and cross-module noise, the runtime-evidence approach shows significantly greater advantage. See the [ZooKeeper testing guide](../demos/zookeeper-test/) for applying this pipeline to a real distributed system.*
-
 ## Directory Structure
 
 ```
