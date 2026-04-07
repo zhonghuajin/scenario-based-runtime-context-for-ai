@@ -1,0 +1,73 @@
+{
+    // 使用 IntelliSense 了解相关属性。 
+    // 悬停以查看现有属性的描述。
+    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "type": "java",
+            "name": "Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "BlockPruner",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.pruner.BlockPruner",
+            "projectName": "block-pruner"
+        },
+        {
+            "type": "java",
+            "name": "DataStructuring",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.data.structuring.DataStructuring",
+            "projectName": "data-structuring"
+        },
+        {
+            "type": "java",
+            "name": "InstrumentActivator",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.InstrumentActivator",
+            "projectName": "instrumentor-activator"
+        },
+        {
+            "type": "java",
+            "name": "SyncTest",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.happens.before.SyncTest",
+            "projectName": "instrumentor-test"
+        },
+        {
+            "type": "java",
+            "name": "CommentMapper",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.CommentMapper",
+            "projectName": "instrumentor-with-encoding",
+            "args": ["C:/TechLearning/ai-test-project/spring-boot/module/spring-boot-webmvc"]
+        },
+        {
+            "type": "java",
+            "name": "UnifiedInstrumentor",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.UnifiedInstrumentor",
+            "projectName": "instrumentor"
+        },
+        {
+            "type": "java",
+            "name": "HbInstrumentor",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.happens.before.HbInstrumentor",
+            "projectName": "instrumentor",
+            "args": ["C:/TechLearning/ai-test-project/spring-boot/module/spring-boot-webmvc"]
+        },
+        {
+            "type": "java",
+            "name": "LogDeduplicator",
+            "request": "launch",
+            "mainClass": "com.example.instrumentor.pruner.LogDeduplicator",
+            "projectName": "log-deduplicator"
+        }
+    ]
+}

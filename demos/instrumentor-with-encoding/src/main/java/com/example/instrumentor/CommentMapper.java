@@ -10,70 +10,51 @@ import java.util.regex.*;
 import java.util.stream.Stream;
 
 public class CommentMapper {
-    private static final Pattern ORIGINAL_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*(.+\\.java:\\d+)\\s*$ ");
-    private static final Pattern MAPPED_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*INST#(\\d+)\\s*$ ");
+    private static final Pattern ORIGINAL_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*(.+\\.java:\\d+)\\s*$");
+    private static final Pattern MAPPED_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*INST#(\\d+)\\s*$");
 
     private final Map<Integer, String> idToComment = new LinkedHashMap<>();
     private final Map<String, Integer> commentToId = new LinkedHashMap<>();
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 2) {
+        if (args.length < 1) {
+            System.err.println("Usage: CommentMapper [-o mappingOutput] <target1> [target2 ...]");
             System.exit(1);
         }
-        String command = args[0];
 
-        switch (command) {
-            case "map " -> {
-                if (args.length < 2) System.exit(1);
+        List<Path> targets = new ArrayList<>();
+        Path mappingOutput = null;
 
-                List<Path> targets = new ArrayList<>();
-                Path mappingOutput = null;
-                for (int i = 1; i < args.length; i++) {
-                    if ("-o ".equals(args[i])) {
-                        if (i + 1 < args.length) {
-                            mappingOutput = Paths.get(args[++i]).toAbsolutePath().normalize();
-                        } else {
-                            System.exit(1);
-                        }
-                    } else {
-                        targets.add(Paths.get(args[i]).toAbsolutePath().normalize());
-                    }
+        for (int i = 0; i < args.length; i++) {
+            if ("-o".equals(args[i])) {
+                if (i + 1 < args.length) {
+                    mappingOutput = Paths.get(args[++i]).toAbsolutePath().normalize();
+                } else {
+                    System.err.println("Missing value for -o");
+                    System.exit(1);
                 }
-                if (mappingOutput == null) {
-                    mappingOutput = Paths.get(System.getProperty("user.dir ")).resolve("comment-mapping.txt ");
-                }
-
-                CommentMapper mapper = new CommentMapper();
-                mapper.buildFullMapping(targets);
-                if (mapper.size() == 0) return;
-
-                for (Path target : targets) {
-                    mapper.replaceCommentsInSource(target);
-                }
-                mapper.writeMappingFile(mappingOutput);
+            } else {
+                targets.add(Paths.get(args[i]).toAbsolutePath().normalize());
             }
-
-            case "incr " -> {
-                if (args.length < 3) System.exit(1);
-
-                Path mappingFile = Paths.get(args[1]).toAbsolutePath().normalize();
-                List<Path> modifiedFiles = new ArrayList<>();
-                for (int i = 2; i < args.length; i++) {
-                    modifiedFiles.add(Paths.get(args[i]).toAbsolutePath().normalize());
-                }
-
-                CommentMapper mapper = new CommentMapper();
-                mapper.buildIncrementalMapping(mappingFile, modifiedFiles);
-                mapper.replaceCommentsInSource(modifiedFiles);
-                mapper.writeMappingFile(mappingFile);
-            }
-
-            case "clean " -> {
-                if (args.length < 2) System.exit(1);
-            }
-
-            default -> System.exit(1);
         }
+
+        if (targets.isEmpty()) {
+            System.err.println("No target files or directories specified.");
+            System.exit(1);
+        }
+
+        if (mappingOutput == null) {
+            mappingOutput = Paths.get(System.getProperty("user.dir")).resolve("comment-mapping.txt");
+        }
+
+        CommentMapper mapper = new CommentMapper();
+        mapper.buildFullMapping(targets);
+        if (mapper.size() == 0) return;
+
+        for (Path target : targets) {
+            mapper.replaceCommentsInSource(target);
+        }
+        mapper.writeMappingFile(mappingOutput);
     }
 
     public void buildFullMapping(List<Path> targets) throws IOException {
@@ -99,49 +80,6 @@ public class CommentMapper {
         buildFullMapping(List.of(target));
     }
 
-    public void buildIncrementalMapping(Path mappingFile, List<Path> modifiedFiles) throws IOException {
-        idToComment.clear();
-        commentToId.clear();
-
-        Map<Integer, String> existingIdToComment = new LinkedHashMap<>();
-        if (Files.exists(mappingFile)) {
-            existingIdToComment = loadRawMapping(mappingFile);
-        }
-
-        Set<String> modifiedPathPrefixes = new HashSet<>();
-        for (Path p : modifiedFiles) {
-            modifiedPathPrefixes.add(p.toAbsolutePath().normalize().toString() + ": ");
-        }
-
-        for (Map.Entry<Integer, String> entry : existingIdToComment.entrySet()) {
-            String comment = entry.getValue();
-            boolean belongsToModified = modifiedPathPrefixes.stream()
-                    .anyMatch(comment::startsWith);
-
-            if (!belongsToModified) {
-                idToComment.put(entry.getKey(), comment);
-                commentToId.put(comment, entry.getKey());
-            }
-        }
-
-        int maxExistingId = idToComment.keySet().stream()
-                .mapToInt(Integer::intValue)
-                .max()
-                .orElse(0);
-
-        List<String> newComments = scanOriginalComments(modifiedFiles);
-        sortCommentsByPathAndLine(newComments);
-
-        int nextId = maxExistingId + 1;
-        for (String comment : newComments) {
-            if (!commentToId.containsKey(comment)) {
-                idToComment.put(nextId, comment);
-                commentToId.put(comment, nextId);
-                nextId++;
-            }
-        }
-    }
-
     public void replaceCommentsInSource(Path target) throws IOException {
         replaceCommentsInSource(collectJavaFiles(target));
     }
@@ -163,7 +101,7 @@ public class CommentMapper {
                     String content = m.group(2);
                     Integer id = commentToId.get(content);
                     if (id != null) {
-                        lines.set(i, indent + "// INST# " + id);
+                        lines.set(i, indent + "// INST#" + id);
                         modified = true;
                     }
                 }
@@ -180,40 +118,22 @@ public class CommentMapper {
         sorted.sort(Comparator.comparingInt(Map.Entry::getKey));
 
         List<String> output = new ArrayList<>();
-        output.add("# ================================================ ");
-        output.add("# Instrumentation Comment -> Integer ID Mapping Table ");
-        output.add("# Generation Time:  " + LocalDateTime.now()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss ")));
-        output.add("# Total Entries:  " + sorted.size());
-        output.add("# ================================================ ");
-        output.add("# Format: Integer ID = File Absolute Path:Code Block Start Line Number ");
-        output.add("# Note: This mapping needs to be regenerated (full) or incrementally updated after source code modifications and re-instrumentation. ");
-        output.add(" ");
+        output.add("# ================================================");
+        output.add("# Instrumentation Comment -> Integer ID Mapping Table");
+        output.add("# Generation Time: " + LocalDateTime.now()
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+        output.add("# Total Entries: " + sorted.size());
+        output.add("# ================================================");
+        output.add("# Format: Integer ID = File Absolute Path:Code Block Start Line Number");
+        output.add("# Note: This mapping needs to be regenerated after source code modifications and re-instrumentation.");
+        output.add("");
 
         for (Map.Entry<Integer, String> entry : sorted) {
-            output.add(entry.getKey() + " =  " + entry.getValue());
+            output.add(entry.getKey() + " = " + entry.getValue());
         }
 
         Files.createDirectories(outputFile.getParent());
         Files.write(outputFile, output, StandardCharsets.UTF_8);
-    }
-
-    private Map<Integer, String> loadRawMapping(Path mappingFile) throws IOException {
-        Map<Integer, String> result = new LinkedHashMap<>();
-        List<String> lines = Files.readAllLines(mappingFile, StandardCharsets.UTF_8);
-        Pattern entryPattern = Pattern.compile("^(\\d+)\\s*=\\s*(.+)$ ");
-
-        for (String line : lines) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty() || trimmed.startsWith("# ")) continue;
-            Matcher m = entryPattern.matcher(trimmed);
-            if (m.matches()) {
-                int id = Integer.parseInt(m.group(1));
-                String comment = m.group(2).trim();
-                result.put(id, comment);
-            }
-        }
-        return result;
     }
 
     public void loadMappingFile(Path mappingFile) throws IOException {
@@ -289,15 +209,33 @@ public class CommentMapper {
         });
     }
 
+    private Map<Integer, String> loadRawMapping(Path mappingFile) throws IOException {
+        Map<Integer, String> result = new LinkedHashMap<>();
+        List<String> lines = Files.readAllLines(mappingFile, StandardCharsets.UTF_8);
+        Pattern entryPattern = Pattern.compile("^(\\d+)\\s*=\\s*(.+)$");
+
+        for (String line : lines) {
+            String trimmed = line.trim();
+            if (trimmed.isEmpty() || trimmed.startsWith("#")) continue;
+            Matcher m = entryPattern.matcher(trimmed);
+            if (m.matches()) {
+                int id = Integer.parseInt(m.group(1));
+                String comment = m.group(2).trim();
+                result.put(id, comment);
+            }
+        }
+        return result;
+    }
+
     private static List<Path> collectJavaFiles(Path target) throws IOException {
         List<Path> result = new ArrayList<>();
         if (Files.isDirectory(target)) {
             try (Stream<Path> walk = Files.walk(target)) {
-                walk.filter(p -> p.toString().endsWith(".java "))
+                walk.filter(p -> p.toString().endsWith(".java"))
                     .sorted()
                     .forEach(result::add);
             }
-        } else if (target.toString().endsWith(".java ")) {
+        } else if (target.toString().endsWith(".java")) {
             result.add(target);
         }
         return result;

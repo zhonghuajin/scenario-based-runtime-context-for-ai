@@ -12,40 +12,26 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class InstrumentActivator {
-    private static final Pattern INST_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*INST#(\\d+)\\s*$ ");
-    private static final Pattern INST_CALL_PATTERN = Pattern.compile("^(\\s*)com\\.example\\.instrumentor\\.InstrumentLog\\.staining\\((\\d+)\\);\\s*$ ");
-    private static final String CALL_TEMPLATE = "com.example.instrumentor.InstrumentLog.staining(%d); ";
-    private static final String COMMENT_TEMPLATE =  "// INST#%d ";
+    private static final Pattern INST_COMMENT_PATTERN = Pattern.compile("^(\\s*)//\\s*INST#(\\d+)\\s*$");
+    private static final Pattern INST_CALL_PATTERN = Pattern.compile("^(\\s*)com\\.example\\.instrumentor\\.InstrumentLog\\.staining\\((\\d+)\\);\\s*$");
+    private static final String CALL_TEMPLATE = "com.example.instrumentor.InstrumentLog.staining(%d);";
+    private static final String COMMENT_TEMPLATE = "// INST#%d";
 
     public static void main(String[] args) throws Exception {
-        if (args.length < 2) {
+        if (args.length < 1) {
+            System.err.println("Usage: InstrumentActivator <target1> [target2 ...]");
             System.exit(1);
         }
-        String command = args[0];
+
         InstrumentActivator activator = new InstrumentActivator();
-
-        switch (command) {
-            case "activate " -> runOnPaths(args, activator::activate);
-            case "deactivate " -> runOnPaths(args, activator::deactivate);
-            default -> System.exit(1);
-        }
-    }
-
-    @FunctionalInterface
-    private interface PathAction {
-        int apply(Path path) throws IOException;
-    }
-
-    private static int runOnPaths(String[] args, PathAction action) throws Exception {
-        int total = 0;
-        for (int i = 1; i < args.length; i++) {
-            Path target = Paths.get(args[i]).toAbsolutePath().normalize();
+        for (String arg : args) {
+            Path target = Paths.get(arg).toAbsolutePath().normalize();
             if (!Files.exists(target)) {
+                System.err.println("Target does not exist: " + target);
                 System.exit(1);
             }
-            total += action.apply(target);
+            activator.activate(target);
         }
-        return total;
     }
 
     public int activate(Path target) throws IOException {
@@ -98,11 +84,11 @@ public class InstrumentActivator {
         List<Path> result = new ArrayList<>();
         if (Files.isDirectory(target)) {
             try (Stream<Path> walk = Files.walk(target)) {
-                walk.filter(p -> p.toString().endsWith(".java "))
+                walk.filter(p -> p.toString().endsWith(".java"))
                     .sorted()
                     .forEach(result::add);
             }
-        } else if (target.toString().endsWith(".java ")) {
+        } else if (target.toString().endsWith(".java")) {
             result.add(target);
         }
         return result;
