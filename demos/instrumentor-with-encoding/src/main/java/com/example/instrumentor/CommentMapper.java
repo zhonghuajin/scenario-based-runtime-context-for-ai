@@ -70,12 +70,6 @@ public class CommentMapper {
 
             case "clean " -> {
                 if (args.length < 2) System.exit(1);
-
-                int totalRemoved = 0;
-                for (int i = 1; i < args.length; i++) {
-                    Path target = Paths.get(args[i]).toAbsolutePath().normalize();
-                    totalRemoved += cleanInstrumentation(target);
-                }
             }
 
             default -> System.exit(1);
