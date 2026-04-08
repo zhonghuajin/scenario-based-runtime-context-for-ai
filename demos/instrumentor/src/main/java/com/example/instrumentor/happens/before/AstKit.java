@@ -7,9 +7,12 @@ import com.github.javaparser.ast.DataKey;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.expr.AssignExpr;
+import com.github.javaparser.ast.expr.ClassExpr;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
 import com.github.javaparser.ast.expr.LambdaExpr;
+import com.github.javaparser.ast.expr.LiteralExpr;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.NullLiteralExpr;
@@ -17,27 +20,24 @@ import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.UnaryExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
-import com.github.javaparser.ast.expr.AssignExpr;
-import com.github.javaparser.ast.expr.LiteralExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.ExpressionStmt;
 import com.github.javaparser.ast.stmt.ReturnStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.ThrowStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 
 public class AstKit {
 
     public static final String LOGGER_FQN = "com.example.instrumentor.InstrumentLog";
     public static final DataKey<Boolean> INSTRUMENTED_KEY = new DataKey<Boolean>() {};
 
-    
     public static final Map<String, Integer> EVENT_DICT = new LinkedHashMap<>();
     private static int eventIdCounter = 1;
 
     public static synchronized int getEventId(String message) {
         return EVENT_DICT.computeIfAbsent(message, k -> eventIdCounter++);
     }
-    
 
     public static ExpressionStmt emitEventStmt(String eventType, String synContext,
             Expression targetExpr, Expression dataExpr) {
@@ -100,7 +100,7 @@ public class AstKit {
         while (cur.getParentNode().isPresent()) {
             Node parent = cur.getParentNode().get();
             if (parent instanceof BlockStmt) {
-                return false; 
+                return false;
             }
             if (parent instanceof com.github.javaparser.ast.stmt.IfStmt ||
                 parent instanceof com.github.javaparser.ast.stmt.WhileStmt ||
@@ -132,18 +132,13 @@ public class AstKit {
                 BlockStmt body = new BlockStmt();
                 if (before) body.addStatement(stmt);
 
-                
-                
-                
-                
-                
                 if (cur instanceof ExpressionStmt es
                         && lambda.getExpressionBody().isPresent()) {
                     Expression e = es.getExpression();
                     if (needsReturn(e)) {
                         body.addStatement(new ReturnStmt(e));
                     } else {
-                        body.addStatement(es);          
+                        body.addStatement(es);
                     }
                 } else if (cur instanceof Statement s) {
                     body.addStatement(s);
@@ -163,45 +158,39 @@ public class AstKit {
         }
     }
 
-    
     private static boolean needsReturn(Expression e) {
         if (e instanceof AssignExpr) return false;
         if (e instanceof UnaryExpr ue) {
             UnaryExpr.Operator op = ue.getOperator();
-            return !(op == UnaryExpr.Operator.PREFIX_INCREMENT || 
-                     op == UnaryExpr.Operator.POSTFIX_INCREMENT || 
-                     op == UnaryExpr.Operator.PREFIX_DECREMENT || 
+            return !(op == UnaryExpr.Operator.PREFIX_INCREMENT ||
+                     op == UnaryExpr.Operator.POSTFIX_INCREMENT ||
+                     op == UnaryExpr.Operator.PREFIX_DECREMENT ||
                      op == UnaryExpr.Operator.POSTFIX_DECREMENT);
         }
         if (e instanceof MethodCallExpr mc) {
             String name = mc.getNameAsString();
-            
-            if (name.equals("error") || name.equals("warn") || name.equals("info") || 
-                name.equals("debug") || name.equals("trace") || name.equals("print") || 
-                name.equals("println") || name.startsWith("set") || name.startsWith("add") || 
-                name.startsWith("remove") || name.startsWith("put") || name.startsWith("clear") || 
-                name.startsWith("close") || name.startsWith("start") || name.startsWith("stop") || 
-                name.startsWith("run") || name.startsWith("accept") || name.startsWith("execute") || 
+            if (name.equals("error") || name.equals("warn") || name.equals("info") ||
+                name.equals("debug") || name.equals("trace") || name.equals("print") ||
+                name.equals("println") || name.startsWith("set") || name.startsWith("add") ||
+                name.startsWith("remove") || name.startsWith("put") || name.startsWith("clear") ||
+                name.startsWith("close") || name.startsWith("start") || name.startsWith("stop") ||
+                name.startsWith("run") || name.startsWith("accept") || name.startsWith("execute") ||
                 name.startsWith("forEach") || name.startsWith("register")) {
                 return false;
             }
-            
-            if (name.startsWith("get") || name.startsWith("is") || name.startsWith("has") || 
-                name.startsWith("create") || name.startsWith("build") || name.startsWith("compute") || 
+            if (name.startsWith("get") || name.startsWith("is") || name.startsWith("has") ||
+                name.startsWith("create") || name.startsWith("build") || name.startsWith("compute") ||
                 name.startsWith("calculate") || name.startsWith("supply") || name.startsWith("call")) {
                 return true;
             }
-            
             return true;
         }
-        
-        if (e instanceof LiteralExpr || e instanceof NameExpr || 
+        if (e instanceof LiteralExpr || e instanceof NameExpr ||
             e instanceof FieldAccessExpr || e instanceof ObjectCreationExpr) {
             return true;
         }
         return true;
     }
-    
 
     private static int indexOf(NodeList<Statement> stmts, Node target) {
         for (int i = 0; i < stmts.size(); i++) {
@@ -210,6 +199,16 @@ public class AstKit {
         return -1;
     }
 
+    /**
+     * Derives the "owner" expression for a field access, suitable for use
+     * as an argument to System.identityHashCode().
+     *
+     * Key fix: when the target is a NameExpr that is not a field, not a known
+     * local variable, and starts with an uppercase letter, it is treated as a
+     * class name and converted to ClassName.class (a ClassExpr), because a bare
+     * class name like "ApplicationConversionService" is not a valid expression
+     * in Java — you need "ApplicationConversionService.class".
+     */
     public static Expression ownerOf(Expression target, ProbeContext ctx) {
         if (target instanceof FieldAccessExpr fae) return fae;
         if (target instanceof NameExpr ne) {
@@ -217,6 +216,15 @@ public class AstKit {
             if (ctx.isField(name)) {
                 if (ctx.isStaticField(name)) return null;
                 return new ThisExpr();
+            }
+            // If not a field and not a known local/parameter variable, and the name
+            // starts with an uppercase letter, it is almost certainly a class name
+            // used as the scope of a static field access (e.g. MyClass.someField).
+            // Convert it to MyClass.class so the generated code is valid Java.
+            if (ctx.lookupType(name) == null
+                    && !name.isEmpty()
+                    && Character.isUpperCase(name.charAt(0))) {
+                return new ClassExpr(new ClassOrInterfaceType(null, name));
             }
             return ne;
         }
