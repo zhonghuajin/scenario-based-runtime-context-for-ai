@@ -103,8 +103,13 @@ public class DataStructuring {
         List<ThreadTrace> traces = new ArrayList<>();
         List<String> lines = Files.readAllLines(Paths.get(path), StandardCharsets.UTF_8);
 
-        Pattern headerPat = Pattern.compile("\\[(.+?)\\].*?#(\\d+).*?count:\\s*(\\d+)");
-        Pattern mergedPat = Pattern.compile("merged from:\\s*(.+?)\\)");
+        Pattern headerPat = Pattern.compile(
+            "\\[(.+?)\\].*?#(\\d+).*?count:\\s*(\\d+)",
+            Pattern.CASE_INSENSITIVE
+        );
+        Pattern mergedPat = Pattern.compile(
+            "[Mm]erged from\\s+\\d+\\s+threads:\\s*(.+?)$"
+        );
 
         int i = 0;
         while (i < lines.size()) {
