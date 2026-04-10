@@ -67,7 +67,11 @@
             "name": "LogDeduplicator",
             "request": "launch",
             "mainClass": "com.example.instrumentor.pruner.LogDeduplicator",
-            "projectName": "log-deduplicator"
+            "projectName": "log-deduplicator",
+            "args": [
+                "C:/TechLearning/scenario-based-runtime-context-for-ai/instrumentor-log-20260410_131401-junit-listener.txt",
+                "C:/TechLearning/scenario-based-runtime-context-for-ai/instrumentor-log-20260410_131401-junit-listener_dedup.txt",
+            ]
         }
     ]
 }

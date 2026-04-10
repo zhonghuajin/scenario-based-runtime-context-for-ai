@@ -36,10 +36,11 @@ public class BlockPruner {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 4) {
-            System.err.println("Usage: BlockPruner <Source Directory> <comment-mapping file> <instrument-log file> <Output Directory>");
+            System.err.println("Usage: BlockPruner <Source Directories> <comment-mapping file> <instrument-log file> <Output Directory>");
             System.err.println();
             System.err.println("Parameter Description:");
-            System.err.println("  <Source Directory>         Original Java source root directory (can correspond to paths in mapping)");
+            System.err.println("  <Source Directories>       Java source root directories, separated by ';' for multiple paths");
+            System.err.println("                             e.g. \"dir1;dir2;dir3\"");
             System.err.println("  <comment-mapping>          Instrumentation mapping file (format: ID = filePath:lineNo)");
             System.err.println("  <instrument-log>           Runtime instrumentation log file");
             System.err.println("  <Output Directory>         Output root directory for pruned source code");
@@ -47,12 +48,28 @@ public class BlockPruner {
             return;
         }
 
-        Path sourceDir   = Paths.get(args[0]).toAbsolutePath().normalize();
+        // Parse multiple source directories separated by ';'
+        List<Path> sourceDirs = new ArrayList<>();
+        for (String part : args[0].split(";")) {
+            part = part.trim();
+            if (!part.isEmpty()) {
+                sourceDirs.add(Paths.get(part).toAbsolutePath().normalize());
+            }
+        }
+        if (sourceDirs.isEmpty()) {
+            System.err.println("[Error] No valid source directory provided.");
+            System.exit(1);
+            return;
+        }
+
         Path mappingFile = Paths.get(args[1]);
         Path logFile     = Paths.get(args[2]);
         Path outputDir   = Paths.get(args[3]).toAbsolutePath().normalize();
 
-        System.out.println("[BlockPruner] Source Directory: " + sourceDir);
+        System.out.println("[BlockPruner] Source Directories:");
+        for (int i = 0; i < sourceDirs.size(); i++) {
+            System.out.printf("  [%d] %s%n", i + 1, sourceDirs.get(i));
+        }
         System.out.println("[BlockPruner] Mapping File: " + mappingFile);
         System.out.println("[BlockPruner] Log File: " + logFile);
         System.out.println("[BlockPruner] Output Directory: " + outputDir);
@@ -71,7 +88,7 @@ public class BlockPruner {
         System.out.printf("[Step 3] Involves %d source files%n", fileBlockIndex.size());
 
         
-        Map<String, Path> resolvedPaths = resolveSourceFiles(fileBlockIndex.keySet(), sourceDir);
+        Map<String, Path> resolvedPaths = resolveSourceFiles(fileBlockIndex.keySet(), sourceDirs);
         System.out.printf("[Step 4] Successfully located %d / %d source files%n",
                 resolvedPaths.size(), fileBlockIndex.size());
 
@@ -89,7 +106,7 @@ public class BlockPruner {
             Set<Integer> executedIds = entry.getValue();
             System.out.printf("%n[%d/%d] ", idx, totalThreads);
             pruneForThread(threadName, executedIds, blockMap, fileBlockIndex,
-                    resolvedPaths, sourceDir, outputDir);
+                    resolvedPaths, sourceDirs, outputDir);
         }
 
         System.out.println();
@@ -105,7 +122,7 @@ public class BlockPruner {
             Map<Integer, BlockLocation> blockMap,
             Map<String, Map<Integer, Integer>> fileBlockIndex,
             Map<String, Path> resolvedPaths,
-            Path sourceDir,
+            List<Path> sourceDirs,
             Path outputDir) throws IOException {
 
         System.out.printf("===== Thread [%s]  Executed %d blocks =====%n", threadName, executedIds.size());
@@ -162,7 +179,8 @@ public class BlockPruner {
             int prunedCount = pruneUnexecutedBlocks(cu, unexecutedLines, executedLineToId, threadName);
 
             
-            Path relativePath = sourceDir.relativize(srcFile.toAbsolutePath().normalize());
+            Path matchingSourceDir = findMatchingSourceDir(srcFile, sourceDirs);
+            Path relativePath = matchingSourceDir.relativize(srcFile.toAbsolutePath().normalize());
             Path outFile = outputDir.resolve(safeDirName).resolve(relativePath);
             Files.createDirectories(outFile.getParent());
             Files.writeString(outFile, cu.toString(), StandardCharsets.UTF_8);
@@ -177,6 +195,30 @@ public class BlockPruner {
             }
             System.out.println();
         }
+    }
+
+    /**
+     * Find which source directory the given source file resides under.
+     * Falls back to the first source directory if no match is found.
+     */
+    private static Path findMatchingSourceDir(Path srcFile, List<Path> sourceDirs) {
+        Path normalized = srcFile.toAbsolutePath().normalize();
+        for (Path sd : sourceDirs) {
+            if (normalized.startsWith(sd)) {
+                return sd;
+            }
+        }
+        // Fallback: pick the directory that shares the longest common suffix with the file path
+        Path best = sourceDirs.get(0);
+        int bestScore = -1;
+        for (Path sd : sourceDirs) {
+            int score = commonSuffixLength(normalizePath(normalized.toString()), normalizePath(sd.toString()));
+            if (score > bestScore) {
+                bestScore = score;
+                best = sd;
+            }
+        }
+        return best;
     }
 
     
@@ -335,22 +377,33 @@ public class BlockPruner {
     }
 
     
-    private static Map<String, Path> resolveSourceFiles(Set<String> normalizedPaths, Path sourceDir)
+    private static Map<String, Path> resolveSourceFiles(Set<String> normalizedPaths, List<Path> sourceDirs)
             throws IOException {
         Map<String, Path> resolved = new LinkedHashMap<>();
 
         
         Map<String, List<Path>> nameIndex = new HashMap<>();
-        try (Stream<Path> walk = Files.walk(sourceDir)) {
-            walk.filter(p -> p.toString().endsWith(".java") && Files.isRegularFile(p))
-                    .forEach(p -> nameIndex
-                            .computeIfAbsent(p.getFileName().toString(), k -> new ArrayList<>())
-                            .add(p.toAbsolutePath().normalize()));
+        for (Path sourceDir : sourceDirs) {
+            if (!Files.isDirectory(sourceDir)) {
+                System.err.println("[Warning] Source directory does not exist or is not a directory: " + sourceDir);
+                continue;
+            }
+            try (Stream<Path> walk = Files.walk(sourceDir)) {
+                walk.filter(p -> p.toString().endsWith(".java") && Files.isRegularFile(p))
+                        .forEach(p -> nameIndex
+                                .computeIfAbsent(p.getFileName().toString(), k -> new ArrayList<>())
+                                .add(p.toAbsolutePath().normalize()));
+            }
         }
 
         for (String np : normalizedPaths) {
             Path found = tryResolveDirect(np);
-            if (found == null) found = tryResolveByMarker(np, sourceDir);
+            if (found == null) {
+                for (Path sourceDir : sourceDirs) {
+                    found = tryResolveByMarker(np, sourceDir);
+                    if (found != null) break;
+                }
+            }
             if (found == null) found = tryResolveByName(np, nameIndex);
 
             if (found != null) {

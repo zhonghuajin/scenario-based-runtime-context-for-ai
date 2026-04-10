@@ -13,7 +13,7 @@ If specified, skips the second build and test execution steps (Steps 5 & 6).
 .EXAMPLE
 .\run-instrumentation-demo.ps1
 .EXAMPLE
-.\run-instrumentation-demo.ps1 -TargetFoldersFile ".\my-folders.txt"
+.\run-instrumentation-demo.ps1 -TargetFoldersFile ".\target-folders.txt" -SkipBuildAndTest
 .EXAMPLE
 .\run-instrumentation-demo.ps1 -TargetFolders ".\demos\instrumentor-test\src\main\java\com\example\instrumentor\happens"
 .EXAMPLE
