@@ -53,7 +53,7 @@ public class LogDeduplicator {
 
     private static List<ThreadRecord> parseInstrumentLog(Path file) throws IOException {
         List<ThreadRecord> records = new ArrayList<>();
-        Pattern headerPattern = Pattern.compile("^\\[(.+?)].* ");
+        Pattern headerPattern = Pattern.compile("^\\[(.+?)].*");
         String currentThread = null;
         List<Integer> currentSequence = null;
 
