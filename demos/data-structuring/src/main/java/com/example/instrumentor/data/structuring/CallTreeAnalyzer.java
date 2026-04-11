@@ -19,11 +19,6 @@ public class CallTreeAnalyzer {
             .disableHtmlEscaping()
             .create();
 
-    
-    
-    
-
-    
     public static String analyze(String jsonInput, String targetThread) {
         try {
             JsonObject root = JsonParser.parseString(jsonInput).getAsJsonObject();
@@ -49,17 +44,15 @@ public class CallTreeAnalyzer {
 
                 List<Integer> trace = extractBlockTrace(td);
 
-                
                 Map<Integer, String> blockToSig = new HashMap<>();
                 Map<String, String> sigToSource = new LinkedHashMap<>();
                 Map<String, String> sigToFile = new HashMap<>();
                 buildMappings(td, blockToSig, sigToSource, sigToFile);
 
-                
                 CallNode tree = buildCallTree(trace, blockToSig, sigToSource);
                 attachMetadata(tree, sigToSource, sigToFile);
 
-                analyses.add(new ThreadAnalysis(name, order, trace, tree));
+                analyses.add(new ThreadAnalysis(name, order, tree));
             }
 
             return postProcessJson(generateJson(analyses));
@@ -67,24 +60,47 @@ public class CallTreeAnalyzer {
         } catch (Exception e) {
             System.err.println("Call tree analysis failed: " + e.getMessage());
             e.printStackTrace();
-            return jsonInput; 
+            return jsonInput;
         }
     }
-
-    
-    
-    
 
     private static List<Integer> extractBlockTrace(JsonObject threadData) {
         List<Integer> trace = new ArrayList<>();
         if (!threadData.has("block_trace") || !threadData.get("block_trace").isJsonArray()) {
-            return trace;
+            // 如果中间JSON已经没有block_trace，则从source中的Block ID注释推断
+            return extractBlockTraceFromSources(threadData);
         }
 
         JsonArray raw = threadData.getAsJsonArray("block_trace");
         for (JsonElement e : raw) {
             if (e != null && e.isJsonPrimitive() && e.getAsJsonPrimitive().isNumber()) {
                 trace.add(e.getAsInt());
+            }
+        }
+        return trace;
+    }
+
+    private static List<Integer> extractBlockTraceFromSources(JsonObject threadData) {
+        List<Integer> trace = new ArrayList<>();
+        if (!threadData.has("files") || !threadData.get("files").isJsonArray())
+            return trace;
+
+        Pattern pat = Pattern.compile("\\[Executed Block ID: (\\d+)");
+        JsonArray files = threadData.getAsJsonArray("files");
+        for (JsonElement fileElem : files) {
+            JsonObject file = fileElem.getAsJsonObject();
+            if (!file.has("methods") || !file.get("methods").isJsonArray())
+                continue;
+            JsonArray methods = file.getAsJsonArray("methods");
+            for (JsonElement methodElem : methods) {
+                JsonObject method = methodElem.getAsJsonObject();
+                String source = getAsString(method, "source");
+                if (source == null || source.trim().isEmpty())
+                    continue;
+                Matcher m = pat.matcher(source);
+                while (m.find()) {
+                    trace.add(Integer.parseInt(m.group(1)));
+                }
             }
         }
         return trace;
@@ -159,10 +175,6 @@ public class CallTreeAnalyzer {
             return "<static-initializer>";
         return sig;
     }
-
-    
-    
-    
 
     private static CallNode buildCallTree(List<Integer> trace,
             Map<Integer, String> blockToSig,
@@ -253,10 +265,6 @@ public class CallTreeAnalyzer {
         return tokens[tokens.length - 1];
     }
 
-    
-    
-    
-
     private static void attachMetadata(CallNode node,
             Map<String, String> sigToSource,
             Map<String, String> sigToFile) {
@@ -268,10 +276,6 @@ public class CallTreeAnalyzer {
             attachMetadata(child, sigToSource, sigToFile);
         }
     }
-
-    
-    
-    
 
     static class CallNode {
         String signature;
@@ -289,20 +293,14 @@ public class CallTreeAnalyzer {
     static class ThreadAnalysis {
         String name;
         int order;
-        List<Integer> blockTrace;
         CallNode callTree;
 
-        ThreadAnalysis(String name, int order, List<Integer> trace, CallNode tree) {
+        ThreadAnalysis(String name, int order, CallNode tree) {
             this.name = name;
             this.order = order;
-            this.blockTrace = trace;
             this.callTree = tree;
         }
     }
-
-    
-    
-    
 
     private static String generateJson(List<ThreadAnalysis> analyses) {
         Map<String, Object> root = new LinkedHashMap<>();
@@ -312,7 +310,7 @@ public class CallTreeAnalyzer {
             Map<String, Object> threadMap = new LinkedHashMap<>();
             threadMap.put("name", ta.name);
             threadMap.put("order", ta.order);
-            threadMap.put("block_trace", ta.blockTrace);
+            // block_trace 已移除
 
             CallNode rootNode = ta.callTree;
             if (rootNode.children.isEmpty()) {
@@ -361,10 +359,6 @@ public class CallTreeAnalyzer {
         return map;
     }
 
-    
-    
-    
-
     private static String getAsString(JsonObject obj, String key) {
         if (obj == null || !obj.has(key) || obj.get(key).isJsonNull())
             return null;
@@ -385,7 +379,6 @@ public class CallTreeAnalyzer {
         if (json == null || json.isEmpty())
             return json;
 
-        json = compactNumericArrayField(json, "block_trace");
         json = compactNumericArrayField(json, "executed_blocks");
 
         return json;

@@ -25,10 +25,6 @@ import java.util.stream.Collectors;
 
 public class DataStructuring {
 
-    
-    
-    
-
     static class BlockInfo {
         final int id;
         final String filePath;
@@ -75,10 +71,6 @@ public class DataStructuring {
             this.mergedFrom = mergedFrom;
         }
     }
-
-    
-    
-    
 
     static Map<Integer, BlockInfo> parseMappingFile(String path) throws IOException {
         Map<Integer, BlockInfo> map = new LinkedHashMap<>();
@@ -151,10 +143,6 @@ public class DataStructuring {
         }
         return traces;
     }
-
-    
-    
-    
 
     static Map<Integer, MethodInfo> mapBlocksToMethods(Path prunedFile) {
         Map<Integer, MethodInfo> blockToMethod = new HashMap<>();
@@ -262,10 +250,6 @@ public class DataStructuring {
         return parts.isEmpty() ? "<anonymous>" : String.join("$", parts);
     }
 
-    
-    
-    
-
     static String extractSource(Path filePath, int startLine, int endLine) {
         if (startLine <= 0 || endLine <= 0) return "";
         try {
@@ -306,10 +290,6 @@ public class DataStructuring {
             return line.substring(pos);
         }).collect(Collectors.joining("\n"));
     }
-
-    
-    
-    
 
     static String extractRelativePath(String absolutePath) {
         String norm = absolutePath.replace('\\', '/');
@@ -357,10 +337,6 @@ public class DataStructuring {
         return sb.toString();
     }
 
-    
-    
-    
-
     public static void main(String[] args) throws Exception {
         if (args.length < 4) {
             System.out.println("Usage: java -jar instrumentor-analyzer.jar <pruned_dir> <comment_mapping> <log_file> <event_log_file> [event_dictionary] [output_base_name]");
@@ -371,7 +347,6 @@ public class DataStructuring {
         String mappingPath = args[1];
         String logPath = args[2];
         String eventLogPath = args[3];
-        
         
         String dictPath = null;
         String baseOutputName = "final-output";
@@ -408,7 +383,7 @@ public class DataStructuring {
             if (trace.mergedFrom != null) {
                 tObj.put("merged_from", trace.mergedFrom);
             }
-            tObj.put("block_trace", trace.blockIds);
+            // block_trace 已移除
 
             List<String> fileOrder = new ArrayList<>();
             Map<String, List<String>> methodOrderInFile = new HashMap<>();
@@ -497,7 +472,6 @@ public class DataStructuring {
 
         System.out.println("[2/3] Starting analysis of Happens-Before synchronization relationships...");
         
-        
         Map<String, String> eventDict = new HashMap<>();
         if (dictPath != null && Files.exists(Paths.get(dictPath))) {
             System.out.println(" - Dictionary file found, loading: " + dictPath);
@@ -531,13 +505,11 @@ public class DataStructuring {
             }
             eventLogContent = translatedLog.toString();
         }
-        
 
         JsonObject happensBeforeData = HappensBeforeAnalyzer.analyzeEvents(eventLogContent);
 
         System.out.println("[3/3] Generating standalone data files (JSON + Markdown)...");
 
-        
         String happensBeforeOutput = gson.toJson(happensBeforeData);
         String hbPath = baseOutputName + "-happensbefore.json";
         String hbMdPath = baseOutputName + "-happensbefore.md";
@@ -545,7 +517,6 @@ public class DataStructuring {
         MarkdownGenerator.generate(happensBeforeOutput, hbMdPath);
         System.out.println(" - Happens-Before JSON & MD generated: " + hbPath + " / " + hbMdPath);
 
-        
         String callTreeOnlyOutput = CallTreeAnalyzer.analyze(intermediateJson, null);
         String ctPath = baseOutputName + "-calltree.json";
         String ctMdPath = baseOutputName + "-calltree.md";
@@ -553,7 +524,6 @@ public class DataStructuring {
         MarkdownGenerator.generate(callTreeOnlyOutput, ctMdPath);
         System.out.println(" - Call Tree JSON & MD generated: " + ctPath + " / " + ctMdPath);
 
-        
         JsonObject combinedRoot = JsonParser.parseString(callTreeOnlyOutput).getAsJsonObject();
         if (happensBeforeData.has("sync_relations")) {
             combinedRoot.add("sync_relations", happensBeforeData.get("sync_relations"));
@@ -565,7 +535,6 @@ public class DataStructuring {
             combinedRoot.add("possible_taint_flows", happensBeforeData.get("possible_taint_flows"));
         }
 
-        
         String combinedOutput = compactIntegerArrays(gson.toJson(combinedRoot));
         String combinedPath = baseOutputName + "-combined.json";
         String combinedMdPath = baseOutputName + "-combined.md";
