@@ -46,3 +46,4 @@ The differences show up in three areas:
 
 **From "unverifiable" to "verifiable".** Without runtime evidence, the AI cannot explain why a fix will work, because it has no visibility into the internal execution path. With runtime evidence, the AI can articulate exactly why the fix is correct — it can trace through the sorting algorithm's behavior and explain how the condition evaluation timing changes after the fix is applied.
 
+However, it also clearly demonstrates that even with zero knowledge of Spring Boot's internal implementation mechanisms, there is a more reliable method than relying on AI for pure static analysis to obtain a solution—one that can be effectively used to fix bugs in large-scale projects like Spring Boot.
