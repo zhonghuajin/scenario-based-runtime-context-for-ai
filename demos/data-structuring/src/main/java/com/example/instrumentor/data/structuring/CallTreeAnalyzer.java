@@ -55,7 +55,7 @@ public class CallTreeAnalyzer {
                 analyses.add(new ThreadAnalysis(name, order, tree));
             }
 
-            return postProcessJson(generateJson(analyses));
+            return generateJson(analyses);
 
         } catch (Exception e) {
             System.err.println("Call tree analysis failed: " + e.getMessage());
@@ -67,7 +67,6 @@ public class CallTreeAnalyzer {
     private static List<Integer> extractBlockTrace(JsonObject threadData) {
         List<Integer> trace = new ArrayList<>();
         if (!threadData.has("block_trace") || !threadData.get("block_trace").isJsonArray()) {
-            // 如果中间JSON已经没有block_trace，则从source中的Block ID注释推断
             return extractBlockTraceFromSources(threadData);
         }
 
@@ -191,19 +190,17 @@ public class CallTreeAnalyzer {
             if (currentSig == null) {
                 CallNode node = new CallNode(targetSig);
                 node.parent = current;
-                node.executedBlocks.add(blockId);
                 current.children.add(node);
                 current = node;
                 currentSig = targetSig;
 
             } else if (currentSig.equals(targetSig)) {
-                current.executedBlocks.add(blockId);
+                // 同一个方法内，继续
 
             } else {
                 CallNode ancestor = findAncestor(current, targetSig);
                 if (ancestor != null) {
                     current = ancestor;
-                    current.executedBlocks.add(blockId);
                     currentSig = targetSig;
                     continue;
                 }
@@ -215,7 +212,6 @@ public class CallTreeAnalyzer {
 
                 CallNode node = new CallNode(targetSig);
                 node.parent = current;
-                node.executedBlocks.add(blockId);
                 current.children.add(node);
                 current = node;
                 currentSig = targetSig;
@@ -281,7 +277,6 @@ public class CallTreeAnalyzer {
         String signature;
         String source;
         String filePath;
-        List<Integer> executedBlocks = new ArrayList<>();
         List<CallNode> children = new ArrayList<>();
         CallNode parent;
 
@@ -310,7 +305,6 @@ public class CallTreeAnalyzer {
             Map<String, Object> threadMap = new LinkedHashMap<>();
             threadMap.put("name", ta.name);
             threadMap.put("order", ta.order);
-            // block_trace 已移除
 
             CallNode rootNode = ta.callTree;
             if (rootNode.children.isEmpty()) {
@@ -338,10 +332,6 @@ public class CallTreeAnalyzer {
 
         if (node.filePath != null) {
             map.put("file", node.filePath);
-        }
-
-        if (!node.executedBlocks.isEmpty()) {
-            map.put("executed_blocks", node.executedBlocks);
         }
 
         if (node.source != null) {
@@ -373,41 +363,5 @@ public class CallTreeAnalyzer {
         } catch (Exception e) {
             return defaultValue;
         }
-    }
-
-    private static String postProcessJson(String json) {
-        if (json == null || json.isEmpty())
-            return json;
-
-        json = compactNumericArrayField(json, "executed_blocks");
-
-        return json;
-    }
-
-    private static String compactNumericArrayField(String json, String fieldName) {
-        Pattern pattern = Pattern.compile(
-                "(\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\\[)([\\s\\S]*?)(\\])",
-                Pattern.MULTILINE);
-
-        Matcher matcher = pattern.matcher(json);
-        StringBuffer sb = new StringBuffer();
-
-        while (matcher.find()) {
-            String prefix = matcher.group(1);
-            String content = matcher.group(2);
-            String suffix = matcher.group(3);
-
-            Matcher numMatcher = Pattern.compile("-?\\d+").matcher(content);
-            List<String> nums = new ArrayList<>();
-            while (numMatcher.find()) {
-                nums.add(numMatcher.group());
-            }
-
-            String replacement = prefix + String.join(", ", nums) + suffix;
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(replacement));
-        }
-
-        matcher.appendTail(sb);
-        return sb.toString();
     }
 }

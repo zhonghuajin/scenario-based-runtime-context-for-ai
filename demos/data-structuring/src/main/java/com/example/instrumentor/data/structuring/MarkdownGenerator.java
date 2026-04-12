@@ -23,7 +23,7 @@ public class MarkdownGenerator {
             md.append("> **Data Schema & Legend:**\n");
             md.append("> This section represents the execution call tree for each thread.\n");
             md.append("> - **Trace**: The linear sequence of executed basic block IDs.\n");
-            md.append("> - **Call Tree**: Hierarchical execution flow. Each node contains the method signature, source file, executed block IDs, and pruned source code.\n\n");
+            md.append("> - **Call Tree**: Hierarchical execution flow. Each node contains the source file and pruned source code.\n\n");
 
             for (JsonElement tElem : root.getAsJsonArray("threads")) {
                 JsonObject thread = tElem.getAsJsonObject();
@@ -38,7 +38,6 @@ public class MarkdownGenerator {
                     JsonElement callTreeElem = thread.get("call_tree");
                     if (callTreeElem.isJsonArray()) {
                         for (JsonElement callElem : callTreeElem.getAsJsonArray()) {
-                            
                             processCallNode(callElem.getAsJsonObject(), md, 0);
                         }
                     } else if (callTreeElem.isJsonObject()) {
@@ -108,8 +107,8 @@ public class MarkdownGenerator {
                 JsonArray flows = taintObj.getAsJsonArray("flows");
                 for (JsonElement fElem : flows) {
                     JsonObject flow = fElem.getAsJsonObject();
-                    String type = flow.get("type").getAsString();
-                    if ("inter_thread".equals(type)) {
+                    String flowType = flow.get("type").getAsString();
+                    if ("inter_thread".equals(flowType)) {
                         JsonObject source = flow.getAsJsonObject("source");
                         JsonObject sink = flow.getAsJsonObject("sink");
                         md.append(String.format("- [Inter] `%s` (Item: %s): %s (%s) -> %s (%s)\n",
@@ -118,7 +117,7 @@ public class MarkdownGenerator {
                                 source.get("thread").getAsString(), source.get("time").getAsString(),
                                 sink.get("thread").getAsString(), sink.get("time").getAsString()
                         ));
-                    } else if ("intra_thread".equals(type)) {
+                    } else if ("intra_thread".equals(flowType)) {
                         md.append(String.format("- [Intra] %s (%s): Wrote to `%s`, tainted by %s\n",
                                 flow.get("thread").getAsString(), flow.get("time").getAsString(),
                                 flow.get("target_variable").getAsString(),
@@ -135,37 +134,29 @@ public class MarkdownGenerator {
 
     
     private static void processCallNode(JsonObject node, StringBuilder md, int level) {
-        
         String indent = "    ".repeat(level);
-        
         String contentIndent = indent + "    ";
 
-        
-        md.append(indent).append("- **`").append(node.get("method").getAsString()).append("`**\n");
-        
-        
+        // 直接以 File 开头，不再输出 method 签名标题行
         if (node.has("file")) {
-            md.append(contentIndent).append("*File:* `").append(node.get("file").getAsString()).append("`\n");
+            md.append(indent).append("- *File:* `").append(node.get("file").getAsString()).append("`\n");
+        } else {
+            md.append(indent).append("- *(no file)*\n");
         }
-        if (node.has("executed_blocks")) {
-            md.append(contentIndent).append("*Blocks:* ").append(node.get("executed_blocks").toString()).append("\n");
-        }
-        
-        
+
+        // executed_blocks 已移除，不再输出 *Blocks:* 行
+
         if (node.has("source")) {
             String source = node.get("source").getAsString();
-            
             source = source.replaceAll("//\\s*\\[Executed Block ID:.*?\\]", "").trim();
             
             md.append(contentIndent).append("```java\n");
-            
             for (String line : source.split("\n")) {
                 md.append(contentIndent).append(line).append("\n");
             }
             md.append(contentIndent).append("```\n");
         }
 
-        
         if (node.has("calls")) {
             md.append(contentIndent).append("*Calls:*\n");
             for (JsonElement child : node.getAsJsonArray("calls")) {

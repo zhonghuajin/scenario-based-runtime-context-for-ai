@@ -4,6 +4,7 @@
 
 👉 **[Read the Quick Start Guide](QUICKSTART.md)** to see how it works in practice.
 👉 **[Browse the Examples](examples/)** to see real pipeline outputs and AI responses without running anything.
+👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
 
 ---
 
@@ -61,14 +62,25 @@ The work collected here centers on a few themes:
 ## Contents
 
 - 🚀 **[QUICKSTART.md](QUICKSTART.md)** — Step-by-step guide to generating and using runtime evidence
-- 📂 **[examples/](examples/)** — Real pipeline outputs and LLM responses you can inspect immediately
+- 📂 **[examples/](examples/)** — Pipeline outputs from the PoC demo code — shows *what the pipeline produces*
+- 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes
 - 🎮 **[demos/](demos/)** — Small demonstrations
 - 🏗️ **[engineering/](engineering/)** — Notes on enterprise-level implementation and production readiness
 
+## Examples vs. Evidence
+
+This repository separates two kinds of artifacts, and the distinction matters:
+
+**[`examples/`](examples/)** contains pipeline outputs generated from the project's own PoC source code ([`demos/instrumentor-test`](demos/instrumentor-test)). These are controlled, self-contained demonstrations designed to show what the pipeline produces — the data formats, the denoised context structure, and how LLMs consume it. They answer the question: *"What does this pipeline's output look like?"*
+
+**[`evidence/`](evidence/)** contains case studies from **real open-source projects** — real bugs, real runtime artifacts, and real diagnoses. These are not controlled demos; they are instances where runtime evidence was applied to actual issues in projects like Spring Boot, and the results were independently confirmed by the project maintainers. They answer a different question: *"Does this approach actually work on real-world problems?"*
+
+In short: `examples/` is the proof of concept; `evidence/` is the proof of value.
+
 ## Examples: See the Output Without Running Anything
 
-The [`examples/`](examples/) directory contains real, unedited artifacts produced by this pipeline, so you can evaluate the approach without setting up any environment.
+The [`examples/`](examples/) directory contains real, unedited artifacts produced by this pipeline against the PoC demo code in [`demos/instrumentor-test`](demos/instrumentor-test), so you can evaluate the pipeline's output format without setting up any environment.
 
 ### Denoised Runtime Data
 
@@ -90,6 +102,18 @@ Three concrete use cases, each with the exact prompt sent to the LLM and the une
 | **Code Audit** | [`AI_Code_Audit_Prompt.md`](examples/prompt_and_response/prompt_template/AI_Code_Audit_Prompt.md) | [`AI_Code_Audit_LLM_Response.md`](examples/prompt_and_response/llm_response/AI_Code_Audit_LLM_Response.md) |
 
 These examples demonstrate how zero-noise runtime context changes the quality of AI reasoning — from vague, speculative analysis to precise, causally grounded understanding.
+
+## Runtime Evidence Archive
+
+The [`evidence/`](evidence/) directory contains case studies from **real open-source projects** where runtime evidence was used to diagnose framework-level issues that static analysis alone could not solve. Unlike the `examples/` above, these are not controlled demonstrations — they are real bugs, confirmed by the upstream project maintainers, where the runtime calltree was the key artifact that revealed the root cause.
+
+Each case study includes the raw runtime artifacts (calltree, condition evaluation reports), the denoised context sent to the LLM, and the LLM's diagnostic response.
+
+| # | Case | Bug Category | Key Insight |
+|---|------|-------------|-------------|
+| 1 | [Spring Boot #49854](evidence/spring-boot-49854/) | Auto-configuration ordering | Calltree revealed that Security auto-configuration evaluated its `@ConditionalOnBean` before MockMvc registered the required bean — a timing issue invisible in static code. |
+
+→ See the [full evidence archive](evidence/) for details, artifact descriptions, and a reading guide.
 
 ## Scope
 

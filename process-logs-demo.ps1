@@ -25,7 +25,7 @@
         -EventsFile ".\events.txt"
 .EXAMPLE
     .\process-logs-demo.ps1 `
-        -TargetFoldersFile ".\my-folders.txt" `
+        -TargetFoldersFile ".\target-folders.txt" `
         -LogFile ".\instrumentor-log.txt" `
         -CommentMappingFile ".\comment-mapping.txt" `
         -EventsFile ".\events.txt"
