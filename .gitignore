@@ -14,3 +14,4 @@ instrumentor-events-*.txt
 AI_Dev_Prompt.md
 AI_Code_Audit_Prompt.md
 AI_Bug_Localization_Prompt.md
+evidence/spring-boot-50021/50021-reproduce-project/target/classes/application.properties
