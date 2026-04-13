@@ -74,12 +74,12 @@ Run the following interactive Python script in your terminal:
 
 **Windows:**
 ```powershell
-python demos\denoised-data-ai-app\generate_prompt.py
+python poc\denoised-data-ai-app\generate_prompt.py
 ```
 
 **Linux / macOS:**
 ```bash
-python demos/denoised-data-ai-app/generate_prompt.py
+python poc/denoised-data-ai-app/generate_prompt.py
 ```
 
 Follow the on-screen instructions to:

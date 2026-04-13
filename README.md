@@ -1,6 +1,6 @@
 # runtime-context-for-ai
 
-**Essays, and demos on using runtime evidence to build cleaner code context for AI.**
+**Essays, and poc on using runtime evidence to build cleaner code context for AI.**
 
 👉 **[Read the Quick Start Guide](QUICKSTART.md)** to see how it works in practice.
 👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
@@ -63,7 +63,7 @@ The work collected here centers on a few themes:
 - 🚀 **[QUICKSTART.md](QUICKSTART.md)** — Step-by-step guide to generating and using runtime evidence
 - 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes
-- 🎮 **[demos/](demos/)** — Small demonstrations
+- 🎮 **[poc/](poc/)** — Small demonstrations
 - 🏗️ **[engineering/](engineering/)** — Notes on enterprise-level implementation and production readiness
 
 ## Runtime Evidence Archive
@@ -80,7 +80,7 @@ Each case study includes the raw runtime artifacts (calltree, condition evaluati
 
 ## Scope
 
-What is shared here is intentionally limited to concepts, reasoning, and lightweight demos. A working implementation covering the full pipeline — from runtime evidence collection through context assembly to model consumption — exists but is not included here. This repository is focused on the public discussion of the ideas themselves.
+What is shared here is intentionally limited to concepts, reasoning, and lightweight poc. A working implementation covering the full pipeline — from runtime evidence collection through context assembly to model consumption — exists but is not included here. This repository is focused on the public discussion of the ideas themselves.
 
 ## Status
 

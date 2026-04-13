@@ -15,7 +15,7 @@ If specified, skips the second build and test execution steps (Steps 5 & 6).
 .EXAMPLE
 .\run-instrumentation-demo.ps1 -TargetFoldersFile ".\target-folders.txt" -SkipBuildAndTest
 .EXAMPLE
-.\run-instrumentation-demo.ps1 -TargetFolders ".\demos\instrumentor-test\src\main\java\com\example\instrumentor\happens"
+.\run-instrumentation-demo.ps1 -TargetFolders ".\poc\instrumentor-test\src\main\java\com\example\instrumentor\happens"
 .EXAMPLE
 .\run-instrumentation-demo.ps1 -TargetFolders @(".\path\to\dir1", ".\path\to\dir2")
 .EXAMPLE
@@ -73,7 +73,7 @@ $env:Path = "$env:JAVA_HOME\bin;$env:Path"
 
 # 3. First build
 Write-Host "Executing mvn clean package to build the instrumentor..." -ForegroundColor Cyan
-mvn -f .\demos\pom.xml clean package -DskipTests
+mvn -f .\poc\pom.xml clean package -DskipTests
 if ($LASTEXITCODE -ne 0) {
     Write-Error "Maven build failed"
     exit 1
@@ -83,19 +83,19 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Executing code instrumentation (Instrumentor)..." -ForegroundColor Cyan
 
 # 4.1 Main instrumentation
-java -jar .\demos\instrumentor\target\instrumentor-1.0-SNAPSHOT.jar @TargetFolders
+java -jar .\poc\instrumentor\target\instrumentor-1.0-SNAPSHOT.jar @TargetFolders
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Main instrumentation step returned non-zero exit code: $LASTEXITCODE"
 }
 
 # 4.2 Encoding mapping
-java -jar .\demos\instrumentor-with-encoding\target\instrumentor-with-encoding-1.0-SNAPSHOT.jar @TargetFolders
+java -jar .\poc\instrumentor-with-encoding\target\instrumentor-with-encoding-1.0-SNAPSHOT.jar @TargetFolders
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Encoding mapping step returned non-zero exit code: $LASTEXITCODE"
 }
 
 # 4.3 Activator
-java -jar .\demos\instrumentor-activator\target\instrumentor-activator-1.0-SNAPSHOT.jar @TargetFolders
+java -jar .\poc\instrumentor-activator\target\instrumentor-activator-1.0-SNAPSHOT.jar @TargetFolders
 if ($LASTEXITCODE -ne 0) {
     Write-Warning "Activator step returned non-zero exit code: $LASTEXITCODE"
 }
@@ -103,14 +103,14 @@ if ($LASTEXITCODE -ne 0) {
 # 5 & 6. Second build and tests
 if (-not $SkipBuildAndTest) {
     Write-Host "Executing mvn clean package again..." -ForegroundColor Cyan
-    mvn -f .\demos\pom.xml clean package -DskipTests
+    mvn -f .\poc\pom.xml clean package -DskipTests
     if ($LASTEXITCODE -ne 0) {
         Write-Error "Second Maven build failed"
         exit 1
     }
 
     Write-Host "Executing SyncTest..." -ForegroundColor Cyan
-    java -cp .\demos\instrumentor-test\target\instrumentor-test-1.0-SNAPSHOT.jar com.example.instrumentor.happens.before.SyncTest
+    java -cp .\poc\instrumentor-test\target\instrumentor-test-1.0-SNAPSHOT.jar com.example.instrumentor.happens.before.SyncTest
     if ($LASTEXITCODE -ne 0) {
         Write-Warning "Test execution returned non-zero exit code: $LASTEXITCODE"
     }

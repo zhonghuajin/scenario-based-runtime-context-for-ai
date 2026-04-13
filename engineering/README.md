@@ -1,6 +1,6 @@
 # Beyond the Demo: The Production-Ready Architecture
 
-The `demos` in this repository serve as a baseline proof-of-concept. They demonstrate that using runtime evidence to build AI context is logically sound and highly effective. 
+The `poc` in this repository serve as a baseline proof-of-concept. They demonstrate that using runtime evidence to build AI context is logically sound and highly effective. 
 
 However, transitioning from a conceptual demo to a **production-ready AI Agent** requires solving a series of hardcore engineering challenges. Real-world codebases are chaotic, polyglot, and fragile.
 

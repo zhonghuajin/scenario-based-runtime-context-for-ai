@@ -4,57 +4,81 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
+    <!-- Inherit parent POM -->
     <parent>
         <groupId>com.example</groupId>
-        <artifactId>demos</artifactId>
+        <artifactId>poc</artifactId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>block-pruner</artifactId>
-    <name>Block Pruner</name>
-    <description>Prune unexecuted code blocks by thread dimension based on instrumentation logs</description>
+    <artifactId>instrumentor-test</artifactId>
+    <packaging>jar</packaging>
+    <name>Instrumentor Test</name>
+    <description>Example project for testing instrumentor functionality</description>
 
+    <!-- Dependencies: versions are managed by parent POM dependencyManagement -->
     <dependencies>
         <dependency>
             <groupId>com.github.javaparser</groupId>
             <artifactId>javaparser-core</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.github.javaparser</groupId>
+            <artifactId>javaparser-symbol-solver-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>instrumentor-log-recorder</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>instrumentor-log-monitor</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- Build fat-jar, can be run directly with java -jar -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
                     <execution>
                         <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
                         <configuration>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
                                         <exclude>META-INF/MANIFEST.MF</exclude>
+                                        <exclude>META-INF/versions/9/module-info.class</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>com.example.instrumentor.pruner.BlockPruner</mainClass>
+                                <transformer
+                                    implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>com.example.instrumentor.happens.before.SyncTest</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <!-- Quick run with mvn exec:java -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <configuration>
-                    <mainClass>com.example.instrumentor.pruner.BlockPruner</mainClass>
+                    <mainClass>com.example.instrumentor.happens.before.SyncTest</mainClass>
                 </configuration>
             </plugin>
         </plugins>

@@ -1,5 +1,5 @@
-demos/*/target/
-demos/*/dependency-reduced-pom.xml
+poc/*/target/
+poc/*/dependency-reduced-pom.xml
 pruned/
 instrumentor-log-*.txt
 instrumentor-events-*.txt

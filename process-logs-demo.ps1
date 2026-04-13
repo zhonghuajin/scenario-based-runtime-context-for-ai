@@ -19,7 +19,7 @@
         -EventsFile "C:\output\instrumentor-events-20260329_171510.txt"
 .EXAMPLE
     .\process-logs-demo.ps1 `
-        -TargetFolders @(".\demos\project-a\src\main\java\com\example\a", ".\demos\project-b\src\main\java\com\example\b") `
+        -TargetFolders @(".\poc\project-a\src\main\java\com\example\a", ".\poc\project-b\src\main\java\com\example\b") `
         -LogFile ".\instrumentor-log.txt" `
         -CommentMappingFile ".\comment-mapping.txt" `
         -EventsFile ".\events.txt"
@@ -62,11 +62,11 @@ param (
 
     # Optional path to the Block Pruner jar
     [Parameter(Mandatory=$false)]
-    [string]$BlockPrunerJar = ".\demos\block-pruner\target\block-pruner-1.0-SNAPSHOT.jar",
+    [string]$BlockPrunerJar = ".\poc\block-pruner\target\block-pruner-1.0-SNAPSHOT.jar",
 
     # Optional path to the Data Structuring jar
     [Parameter(Mandatory=$false)]
-    [string]$DataStructuringJar = ".\demos\data-structuring\target\data-structuring-1.0-SNAPSHOT.jar"
+    [string]$DataStructuringJar = ".\poc\data-structuring\target\data-structuring-1.0-SNAPSHOT.jar"
 )
 
 # --- Resolve target folders (same pattern as run-instrumentation-demo.ps1) ---

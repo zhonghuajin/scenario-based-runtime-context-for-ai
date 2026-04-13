@@ -2,7 +2,7 @@
 # 1. Compile the Instrumentation Tool
 
 ```powershell
-cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk17" ; $env:Path="$env:JAVA_HOME\bin;$env:Path" ; mvn -f .\demos\pom.xml clean install -DskipTests
+cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk17" ; $env:Path="$env:JAVA_HOME\bin;$env:Path" ; mvn -f .\poc\pom.xml clean install -DskipTests
 ```
 
 # 2. Instrument the Code
@@ -140,7 +140,7 @@ Upon successful execution, the following files will be generated in the current 
 # 7. Generate the AI Prompt
 
 ```powershell
-cd \path\to\scenario-based-runtime-context-for-ai\demos\denoised-data-ai-app; python generate_bug_localization_prompt.py
+cd \path\to\scenario-based-runtime-context-for-ai\poc\denoised-data-ai-app; python generate_bug_localization_prompt.py
 ```
 Follow the interactive prompts to input the relevant information. Finally, the following file will be generated in the current directory:
 * `AI_Bug_Localization_Prompt.md`

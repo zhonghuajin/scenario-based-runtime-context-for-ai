@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>demos</artifactId>
+    <artifactId>poc</artifactId>
     <version>1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
-    <name>JDemos - Parent</name>
+    <name>Jpoc - Parent</name>
 
     <modules>
         <!-- Instrumentation -->
