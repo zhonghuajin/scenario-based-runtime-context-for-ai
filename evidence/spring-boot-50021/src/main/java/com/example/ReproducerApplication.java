@@ -44,7 +44,6 @@ public class ReproducerApplication {
                 System.out.println("Conclusion: BUG does not exist or has been fixed.");
             }
             System.out.println("==================================================\n");
-            Thread.sleep(100000);
         };
     }
 }

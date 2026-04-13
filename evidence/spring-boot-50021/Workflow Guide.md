@@ -104,13 +104,15 @@ cd /path/to/spring-boot; ./gradlew clean publishToMavenLocal -x :spring-boot-pro
 
 Taking issue `#50021` as an example:
 ```powershell
-$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path"; cd /path/to/50021-reproduce-project;  mvn spring-boot:run
+$env:JAVA_HOME="/path/to/jdk21" ; $env:Path="$env:JAVA_HOME/bin;$env:Path"; cd /path/to/spring-boot-50021
+mvn clean compile dependency:copy-dependencies -DoutputDirectory=target/lib
+java -cp "target\classes;target\lib\*" com.example.ReproducerApplication
 ```
 *Note:* Keep only one test class that can reproduce the bug (e.g., keep only `MockWithSecurityFilterChainTest.java` and delete the rest) to avoid log explosion.
 
 After the tests finish, the instrumentation logs will be automatically saved. For example:
-* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt`
-* `/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt`
+* `/path/to/spring-boot-50021/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt`
+* `/path/to/spring-boot-50021/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt`
 
 # 5. Restore Spring Boot Source to Clean State 
 
@@ -125,9 +127,9 @@ cd \path\to\scenario-based-runtime-context-for-ai; $env:JAVA_HOME="/path/to/jdk1
 
 .\process-logs-demo.ps1 `
     -TargetFoldersFile ".\target-folders.txt" `
-    -LogFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt" `
+    -LogFile "/path/to/spring-boot-50021/instrumentor-events-yyyymmdd_hhmmss-shutdown.txt" `
     -CommentMappingFile ".\comment-mapping.txt" `
-    -EventsFile "/path/to/spring-boot-pathpatternrequestmatcher/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt"
+    -EventsFile "/path/to/spring-boot-50021/instrumentor-log-yyyymmdd_hhmmss-shutdown.txt"
 ```
 Upon successful execution, the following files will be generated in the current directory:
 * `final-output-calltree.json`
