@@ -70,6 +70,8 @@ The work collected here centers on a few themes:
 
 The [`evidence/`](evidence/) directory contains case studies from **real open-source projects** where runtime evidence was used to diagnose framework-level issues that static analysis alone could not solve. These are real bugs, confirmed by the upstream project maintainers, where the runtime calltree was the key artifact that revealed the root cause.
 
+*(Note: New case studies are continuously being added to this archive.)*
+
 Each case study includes the raw runtime artifacts (calltree, condition evaluation reports), the denoised context sent to the LLM, and the LLM's diagnostic response.
 
 | # | Case | Bug Category | Key Insight |
