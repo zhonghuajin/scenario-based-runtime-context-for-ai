@@ -33,8 +33,7 @@ We highly recommend reading them in the following logical order:
    * *The "How" (Concurrency):* Extends the scenario-based philosophy to the structural complexity of multithreading. Explains how capturing actual *happens-before* synchronization dependencies transforms non-deterministic chaos into locally traceable, single-thread analyses.
 
 ### Part 3: The Bridge (Data Representation)
-4. **[The Data Structure of Scenario Context: Formatting Runtime Facts for LLMs](./The%20Data%20Structure%20of%20Scenario%20Context.md)** *(Note: Adjust filename as needed)*
-   * *The "Translation":* The critical bridge between raw telemetry and AI reasoning. Details how the lightweight integer queues and offline dictionaries are reconstructed into a structured, deterministic template that Large Language Models can natively understand and reason over.
+4. The Data Structure of Scenario Context: Formatting Runtime Facts for LLMs. (deprecated)
 
 ### Part 4: The AI Era Applications
 5. **[From Core Scenarios to Scenario Expansion: A Progressive Construction Paradigm Grounded in Runtime Facts](./From%20Core%20Scenarios%20to%20Scenario%20Expansion%EF%BC%9A%20A%20Progressive%20Construction%20Paradigm%20Grounded%20in%20Runtime%20Facts.md)**
