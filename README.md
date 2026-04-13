@@ -2,7 +2,7 @@
 
 **Essays, and poc on using runtime evidence to build cleaner code context for AI.**
 
-👉 **[Read the Quick Start Guide](QUICKSTART.md)** to see how it works in practice.
+👉 **[Follow the Workflow Guide](evidence/spring-boot-50021/Workflow Guide.md)** to see how it works in practice and run your own tests.
 👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
 
 ---
@@ -60,7 +60,7 @@ The work collected here centers on a few themes:
 
 ## Contents
 
-- 🚀 **[QUICKSTART.md](QUICKSTART.md)** — Step-by-step guide to generating and using runtime evidence
+- 🚀 **[Workflow Guide](evidence/spring-boot-50021/Workflow Guide.md)** — Step-by-step guide to testing and using runtime evidence based on a real Spring Boot case
 - 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes
 - 🎮 **[poc/](poc/)** — Small demonstrations
@@ -74,7 +74,7 @@ Each case study includes the raw runtime artifacts (calltree, condition evaluati
 
 | # | Case | Bug Category | Key Insight |
 |---|------|-------------|-------------|
-| 1 | [Spring Boot #49854](evidence/spring-boot-49854/) | Auto-configuration ordering | Calltree revealed that Security auto-configuration evaluated its `@ConditionalOnBean` before MockMvc registered the required bean — a timing issue invisible in static code. |
+| 1 | [Spring Boot #50021](evidence/spring-boot-50021/) | Framework-level issue | Calltree revealed the exact execution path and runtime state that caused the issue — details invisible in static code. |
 
 → See the [full evidence archive](evidence/) for details, artifact descriptions, and a reading guide.
 
