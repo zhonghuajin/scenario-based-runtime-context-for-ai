@@ -131,11 +131,6 @@ Thoughts, questions, or ideas are welcome.
 *(Note: As my English speaking and listening skills are limited, I strongly prefer text-based communication. Thank you for understanding!)*
 
 - ✉️ Email: zhonghuajin79@gmail.com
-- 💬 WhatsApp: 62655442
-- 💬 WeChat: 58628428
-
-**Holiday Notice:**  
-During Hong Kong public holidays, I am usually in Mainland China spending time with my family. If you need to contact me via phone during these periods, please send an SMS to **`+86 18602045865`** first to explain your intent before making a call.
 
 ## License
 
