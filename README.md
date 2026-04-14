@@ -2,7 +2,7 @@
 
 **Essays, and poc on using runtime evidence to build cleaner code context for AI.**
 
-👉 **[Follow the Workflow Guide](evidence/spring-boot-50021/Workflow Guide.md)** to see how it works in practice and run your own tests.
+👉 **[Follow the Workflow Guide](evidence/spring-boot-50021/Workflow%20Guide.md)** to see how it works in practice and run your own tests.
 👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
 
 ---
@@ -60,7 +60,7 @@ The work collected here centers on a few themes:
 
 ## Contents
 
-- 🚀 **[Workflow Guide](evidence/spring-boot-50021/Workflow Guide.md)** — Step-by-step guide to testing and using runtime evidence based on a real Spring Boot case
+- 🚀 **[Workflow Guide](evidence/spring-boot-50021/Workflow%20Guide.md)** — Step-by-step guide to testing and using runtime evidence based on a real Spring Boot case
 - 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes
 - 🎮 **[poc/](poc/)** — Small demonstrations
@@ -77,17 +77,32 @@ Each case study includes the raw runtime artifacts (calltree, condition evaluati
 | # | Case | Bug Category | Key Insight |
 |---|------|-------------|-------------|
 | 1 | [Spring Boot #50021](evidence/spring-boot-50021/) | Framework-level issue | Calltree revealed the exact execution path and runtime state that caused the issue — details invisible in static code. |
+| 2 | [Spring Boot #49951](evidence/spring-boot-49951/) | Auto-configuration ordering | Calltree exposed the precise chain of `@Conditional` evaluations at runtime, explaining unexpected bean registration. |
+| 3 | [Spring Boot #49854](evidence/spring-boot-49854/) | Property resolution / binding | Runtime evidence showed the actual `Environment` state and fallback paths taken during property binding. |
 
 → See the [full evidence archive](evidence/) for details, artifact descriptions, and a reading guide.
 
 ## Scope
 
-What is shared here is intentionally limited to concepts, reasoning, and lightweight poc. A working implementation covering the full pipeline — from runtime evidence collection through context assembly to model consumption — exists but is not included here. This repository is focused on the public discussion of the ideas themselves.
+This repository contains a working proof-of-concept pipeline — 
+from source code instrumentation, through runtime log collection 
+and denoising, to AI prompt generation — demonstrated against real 
+Spring Boot issues.
+
+The [Workflow Guide](evidence/spring-boot-50021/Workflow%20Guide.md) 
+walks through the full process step by step, and each case study in 
+the [evidence archive](evidence/) includes the complete artifacts 
+(calltree, denoised context, and LLM response).
+
+The focus is on validating the methodology, not on providing 
+production-ready tooling. Enterprise-level considerations 
+(performance, scalability, CI integration) are discussed 
+separately in [engineering/](engineering/).
 
 ## Status
 
-This is an early-stage exploratory repository.  
-It is not a complete framework or product, but a place to develop and test an engineering direction.
+This is a proven methodology repository.  
+It is not presented as a universal solution or a production-ready tool, but as a place to demonstrate and validate a specific engineering direction.
 
 ## Non-goals
 

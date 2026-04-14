@@ -11,7 +11,4 @@ instrumentor-events-*.txt
 /final-output-calltree.md
 /final-output-combined.md
 /final-output-happensbefore.md
-AI_Dev_Prompt.md
-AI_Code_Audit_Prompt.md
-AI_Bug_Localization_Prompt.md
 **/target/
