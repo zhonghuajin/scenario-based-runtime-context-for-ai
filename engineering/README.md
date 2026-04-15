@@ -27,20 +27,3 @@ To validate that this paradigm truly scales to the enterprise level, **I have in
 
 - **Centralized Web Console**  
   A dedicated Web UI is essential for managing the AI Agent, monitoring active instrumentation tasks, configuring scenario templates, and visualizing the gathered runtime evidence.
-
----
-
-### Let's Connect / Career Opportunities
-
-I am deeply passionate about this paradigm shift in AI-assisted software engineering. **I am currently open to new career opportunities.** 
-
-If your company is exploring the frontier of AI Agents, dynamic analysis, or intelligent developer tools, and you are looking for an engineer who can turn these complex concepts into enterprise reality, I would love to connect.
-
-*(Note: As my spoken English and listening skills are limited, I strongly prefer text-based communication. Thank you for understanding!)*
-
-- ✉️ **Email:** zhonghuajin79@gmail.com
-- 💬 **WhatsApp:** 62655442
-- 💬 **WeChat:** 58628428
-
-**Availability Notice:**  
-During Hong Kong public holidays, I am usually in Mainland China spending time with my family. If you need to reach me urgently via phone during these periods, please send an SMS to **`+86 18602045865`** first to explain your intent, and we can coordinate from there.
