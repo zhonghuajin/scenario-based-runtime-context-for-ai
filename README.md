@@ -2,6 +2,7 @@
 
 **Essays, and poc on using runtime evidence to build cleaner code context for AI.**
 
+👉 **[Run the Quickstart](quickstart.ps1)** to execute the automated workflow and see the bug localization process in action.
 👉 **[Follow the Workflow Guide](evidence/spring-boot-50021/Workflow%20Guide.md)** to see how it works in practice and run your own tests.
 👉 **[Browse the Evidence Archive](evidence/)** to see real-world case studies from open-source projects.
 
@@ -60,6 +61,7 @@ The work collected here centers on a few themes:
 
 ## Contents
 
+- ⚡ **[quickstart.ps1](quickstart.ps1)** — Automated quickstart script to run the demonstration workflow
 - 🚀 **[Workflow Guide](evidence/spring-boot-50021/Workflow%20Guide.md)** — Step-by-step guide to testing and using runtime evidence based on a real Spring Boot case
 - 🔍 **[evidence/](evidence/)** — Case studies from real open-source projects — shows *what the approach can solve*
 - 📝 **[essays/](essays/)** — Writing, arguments, and position notes

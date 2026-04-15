@@ -33,6 +33,32 @@ Write-Host "=======================================================" -Foreground
 Write-Host ""
 
 # ---------------------------------------------------------
+# 🐛 BUG DEMONSTRATION & DISCLAIMER INFO
+# ---------------------------------------------------------
+Write-Host "-------------------------------------------------------" -ForegroundColor Yellow
+Write-Host " 🐛 BUG DEMONSTRATION INFO & DISCLAIMER:" -ForegroundColor Yellow
+Write-Host " This workflow uses the sample code located in: " -NoNewline -ForegroundColor Yellow
+Write-Host "poc\instrumentor-test" -ForegroundColor Cyan
+Write-Host ""
+Write-Host " [The Pre-set Bug]" -ForegroundColor Yellow
+Write-Host " There is an intentional concurrency bug in 'Test 8: Event-Driven Aggregation'." -ForegroundColor Yellow
+Write-Host " Symptom: The final output array is [0, 0, 0] instead of the expected [500, 1000, 1500]." -ForegroundColor Yellow
+Write-Host " Root Cause: A Happens-Before violation where the main thread reads the results" -ForegroundColor Yellow
+Write-Host "             before the async EventBus finishes writing them." -ForegroundColor Yellow
+Write-Host ""
+Write-Host " [Disclaimer]" -ForegroundColor Yellow
+Write-Host " Modern LLMs are incredibly powerful. Even without this project's methodology," -ForegroundColor Yellow
+Write-Host " they can easily spot this specific bug just by reading the static source code." -ForegroundColor Yellow
+Write-Host " Therefore, this Quickstart is NOT meant to prove the superiority of this tool" -ForegroundColor Yellow
+Write-Host " on simple bugs. Instead, it serves as a sandbox to demonstrate the GENERAL WORKFLOW:" -ForegroundColor Yellow
+Write-Host "   1. Code Instrumentation" -ForegroundColor Yellow
+Write-Host "   2. Execution & Log Generation" -ForegroundColor Yellow
+Write-Host "   3. Log Denoising" -ForegroundColor Yellow
+Write-Host "   4. AI Prompt Generation" -ForegroundColor Yellow
+Write-Host "-------------------------------------------------------" -ForegroundColor Yellow
+Write-Host ""
+
+# ---------------------------------------------------------
 # Check current Java version (requires >= 17)
 # ---------------------------------------------------------
 $isValidJdk = $false
