@@ -40,8 +40,6 @@ public class SyncTest {
         System.out.println("\n=== Test 9: Market Data Cache ===");
         test.testMarketDataCache();
 
-        System.out.println("\nAll tests completed. Keeping process alive...");
-        keepAlive();
     }
 
     // ==================== Test 1 ====================
@@ -313,12 +311,4 @@ public class SyncTest {
         System.out.println("  [cache] AAPL = " + observed.get());
     }
 
-    // ==================== keep alive ====================
-    private static void keepAlive() {
-        try {
-            new CountDownLatch(1).await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-    }
 }

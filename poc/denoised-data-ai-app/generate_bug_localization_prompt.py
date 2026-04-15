@@ -110,7 +110,7 @@ def main():
     # 4. Read trace data file
     trace_data = ""
     while True:
-        file_path = input("\n📁 4. Please enter the path to the [Call Chain / Combined Data File] (e.g., final-output-combined.md):\n> ").strip()
+        file_path = input("\n📁 4. Please enter the path to the [Call Chain / Combined Data File] (e.g., final-output-calltree.md/final-output-combined.md):\n> ").strip()
         # Remove possible quotes (common when dragging a file into the terminal)
         file_path = file_path.strip('\'"')
         
