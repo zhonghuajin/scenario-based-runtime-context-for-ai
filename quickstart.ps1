@@ -176,10 +176,26 @@ Pause-ForNextStep -CompletedStep "[Step 3] Log Analysis" -NextStep "[Step 4] Gen
 # ---------------------------------------------------------
 Write-Host "`n>>> [Step 4] Generating AI Prompt..." -ForegroundColor Cyan
 $aiAppPath = Join-Path $workDir "poc\denoised-data-ai-app"
+
 if (Test-Path $aiAppPath) {
     Set-Location $aiAppPath
-    Write-Host "About to run Python script to generate the prompt. Please follow the console prompts for interactive input:" -ForegroundColor Green
-    python generate_bug_localization_prompt.py
+    Write-Host "Running Python script to generate the prompt automatically with option [2]..." -ForegroundColor Green
+    
+    # Construct the path to the combined file generated in Step 3
+    $combinedFilePath = Join-Path $workDir "final-output-combined.md"
+    
+    # Provide interactive inputs sequentially using an array
+    $aiInputs = @(
+        "2",                # 1. Select Analysis Mode: 2 (Include Concurrency Analysis)
+        "The event-driven aggregation test incorrectly outputs an array of zeros instead of the expected computed values because the program retrieves the results before the background tasks have finished processing them.",                 # 2. Observable Symptom: (Leave empty to skip)
+        "",                 # 3. Tech Stack Context: (Leave empty to skip)
+        "",                 # 4. Additional Notes: (Leave empty to skip)
+        $combinedFilePath,  # 5. Call Tree File With Concurrency: Provide the exact absolute path
+        ""                  # 6. Extra Enter to prevent any trailing prompts
+    )
+    
+    # Pipe the array to the Python script; each element acts as a line of input
+    $aiInputs | python generate_bug_localization_prompt.py
 } else {
     Write-Host "AI Prompt generation script directory not found: $aiAppPath" -ForegroundColor Red
 }
